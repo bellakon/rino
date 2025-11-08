@@ -135,6 +135,45 @@ class ChecadorService:
         except Exception as e:
             self.desconectar(conn)
             return None, f"Error al obtener usuarios: {str(e)}"
+    
+    def obtener_asistencias(self, ip, puerto=4370):
+        """
+        Obtiene asistencias (attendance) del checador
+        
+        Args:
+            ip (str): IP del checador
+            puerto (int): Puerto del checador
+            
+        Returns:
+            tuple: (lista_asistencias, error)
+        """
+        conn, error = self.conectar(ip, puerto)
+        if error:
+            return None, error
+        
+        try:
+            asistencias = conn.get_attendance()
+            
+            # Convertir a diccionarios compatibles con modelo Asistencia
+            asistencias_lista = []
+            for asistencia in asistencias:
+                # pyzk estructura: user_id, timestamp, status, punch
+                # timestamp es datetime completo
+                timestamp = asistencia.timestamp
+                
+                asistencias_lista.append({
+                    'num_trabajador': int(asistencia.user_id),
+                    'fecha': timestamp.strftime('%Y-%m-%d'),
+                    'hora': timestamp.strftime('%H:%M:%S'),
+                    'checador': ip  # IP del checador como identificador
+                })
+            
+            self.desconectar(conn)
+            return asistencias_lista, None
+            
+        except Exception as e:
+            self.desconectar(conn)
+            return None, f"Error al obtener asistencias: {str(e)}"
 
 
 # Instancia singleton

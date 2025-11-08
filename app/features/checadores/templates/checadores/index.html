@@ -60,6 +60,12 @@
                                         title="Ver trabajadores registrados">
                                         <i class="bi bi-people"></i>
                                     </button>
+                                    <button 
+                                        class="btn btn-sm btn-success ms-1" 
+                                        onclick="descargarAsistencias('{{ checador.id }}')"
+                                        title="Descargar asistencias">
+                                        <i class="bi bi-download"></i>
+                                    </button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -86,6 +92,9 @@
 
 <!-- Modal de trabajadores -->
 {% include 'checadores/modal_trabajadores.html' %}
+
+<!-- Modal de descarga -->
+{% include 'checadores/modal_descarga.html' %}
 
 <script>
 function verificarConexion(checadorId) {
@@ -358,6 +367,89 @@ function mostrarTrabajadores(data) {
     }
     
     document.getElementById('modalTrabajadoresContenido').innerHTML = tablaHtml;
+}
+
+function descargarAsistencias(checadorId) {
+    // Resetear modal
+    document.getElementById('estadoDescarga').textContent = 'Iniciando descarga...';
+    document.getElementById('barraProgreso').style.width = '0%';
+    document.getElementById('barraProgreso').textContent = '0%';
+    document.getElementById('totalAsistencias').textContent = '-';
+    document.getElementById('procesadasAsistencias').textContent = '-';
+    document.getElementById('insertadasAsistencias').textContent = '-';
+    document.getElementById('duplicadasAsistencias').textContent = '-';
+    document.getElementById('errorDescarga').style.display = 'none';
+    document.getElementById('exitoDescarga').style.display = 'none';
+    
+    // Deshabilitar cierre durante descarga
+    document.getElementById('btnCerrarDescarga').disabled = true;
+    document.getElementById('btnCerrarDescargaFooter').disabled = true;
+    
+    const modalElement = document.getElementById('modalDescarga');
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+    
+    // Crear EventSource para recibir progreso en tiempo real
+    const eventSource = new EventSource(`{{ url_for('checadores.descargar_asistencias') }}?checador_id=${checadorId}`);
+    
+    eventSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        
+        // Actualizar progreso
+        if (data.progreso !== undefined) {
+            document.getElementById('barraProgreso').style.width = data.progreso + '%';
+            document.getElementById('barraProgreso').textContent = data.progreso + '%';
+        }
+        
+        // Actualizar estado
+        if (data.estado) {
+            document.getElementById('estadoDescarga').textContent = data.estado;
+        }
+        
+        // Actualizar estadísticas
+        if (data.total !== undefined) {
+            document.getElementById('totalAsistencias').textContent = data.total;
+        }
+        if (data.procesadas !== undefined) {
+            document.getElementById('procesadasAsistencias').textContent = data.procesadas;
+        }
+        if (data.insertadas !== undefined) {
+            document.getElementById('insertadasAsistencias').textContent = data.insertadas;
+        }
+        if (data.duplicadas !== undefined) {
+            document.getElementById('duplicadasAsistencias').textContent = data.duplicadas;
+        }
+        
+        // Error
+        if (data.error) {
+            document.getElementById('errorDescarga').textContent = data.error;
+            document.getElementById('errorDescarga').style.display = 'block';
+            document.getElementById('btnCerrarDescarga').disabled = false;
+            document.getElementById('btnCerrarDescargaFooter').disabled = false;
+            eventSource.close();
+        }
+        
+        // Finalizado
+        if (data.finalizado) {
+            eventSource.close();
+            document.getElementById('btnCerrarDescarga').disabled = false;
+            document.getElementById('btnCerrarDescargaFooter').disabled = false;
+            
+            if (!data.error) {
+                const mensaje = `¡Descarga completada! ${data.insertadas || 0} asistencias nuevas insertadas, ${data.duplicadas || 0} duplicadas omitidas.`;
+                document.getElementById('exitoDescarga').textContent = mensaje;
+                document.getElementById('exitoDescarga').style.display = 'block';
+            }
+        }
+    };
+    
+    eventSource.onerror = function() {
+        eventSource.close();
+        document.getElementById('errorDescarga').textContent = 'Error de conexión durante la descarga';
+        document.getElementById('errorDescarga').style.display = 'block';
+        document.getElementById('btnCerrarDescarga').disabled = false;
+        document.getElementById('btnCerrarDescargaFooter').disabled = false;
+    };
 }
 </script>
 {% endblock %}

@@ -2,9 +2,11 @@
 Rutas para el feature de checadores
 Responsabilidad: gestionar checadores y verificar conexiones
 """
-from flask import Blueprint, render_template, jsonify, request
+from flask import Blueprint, render_template, jsonify, request, Response
+import json
 from app.features.checadores.services.verificar_conexion_use_case import verificar_conexion_use_case
 from app.features.checadores.services.consultar_trabajadores_use_case import consultar_trabajadores_use_case
+from app.features.checadores.services.descargar_asistencias_use_case import descargar_asistencias_use_case
 
 # Crear blueprint
 checadores_bp = Blueprint('checadores', __name__, url_prefix='/checadores')
@@ -58,3 +60,26 @@ def consultar_trabajadores():
         'checador': checador.to_dict(),
         'trabajadores': trabajadores
     })
+
+
+@checadores_bp.route('/descargar-asistencias')
+def descargar_asistencias():
+    """API: Descargar asistencias del checador con progreso en tiempo real"""
+    checador_id = request.args.get('checador_id')
+    
+    if not checador_id:
+        return jsonify({'error': 'ID de checador requerido'}), 400
+    
+    def generar_progreso():
+        """Generador que envía eventos SSE con el progreso"""
+        for evento in descargar_asistencias_use_case.ejecutar(checador_id):
+            yield f"data: {json.dumps(evento)}\n\n"
+    
+    return Response(
+        generar_progreso(),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no'
+        }
+    )
