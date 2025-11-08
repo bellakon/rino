@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+
+{% block title %}Departamentos{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">Gestión de Departamentos</h6>
+                    <div>
+                        <button class="btn btn-sm btn-success" onclick="descargarPlantilla()">
+                            <i class="fas fa-download"></i> Descargar Plantilla
+                        </button>
+                        <button class="btn btn-sm btn-info" onclick="mostrarModalImportar()">
+                            <i class="fas fa-upload"></i> Importar CSV
+                        </button>
+                        <button class="btn btn-sm btn-primary" onclick="mostrarModalCrear()">
+                            <i class="fas fa-plus"></i> Nuevo Departamento
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body px-0 pt-0 pb-2">
+                    <!-- Filtros -->
+                    <div class="row px-4 py-3">
+                        <div class="col-md-6">
+                            <input type="text" class="form-control form-control-sm" id="inputBuscar" 
+                                   placeholder="Buscar por nombre o nomenclatura..." onkeyup="cargarDepartamentos()">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select form-select-sm" id="selectActivo" onchange="cargarDepartamentos()">
+                                <option value="">Todos los estados</option>
+                                <option value="true" selected>Solo activos</option>
+                                <option value="false">Solo inactivos</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Tabla -->
+                    <div class="table-responsive p-0">
+                        <table class="table align-items-center mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Núm.</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Nombre</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Nomenclatura</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Estado</th>
+                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaDepartamentos">
+                                <tr>
+                                    <td colspan="5" class="text-center">Cargando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Crear/Editar Departamento -->
+<div class="modal fade" id="modalDepartamento" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDepartamentoTitulo">Nuevo Departamento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formDepartamento">
+                    <input type="hidden" id="departamentoId">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Número de Departamento *</label>
+                        <input type="number" class="form-control" id="numDepartamento" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Nombre *</label>
+                        <input type="text" class="form-control" id="nombreDepartamento" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Nomenclatura</label>
+                        <input type="text" class="form-control" id="nomenclaturaDepartamento" 
+                               placeholder="Ej: DG, SA, RH">
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="activoDepartamento" checked>
+                        <label class="form-check-label" for="activoDepartamento">Activo</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarDepartamento()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Importar CSV -->
+<div class="modal fade" id="modalImportar" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Importar Departamentos desde CSV</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <strong>Formato requerido:</strong><br>
+                    El archivo CSV debe contener las columnas: 
+                    <code>num_departamento,nombre,nomenclatura,activo</code>
+                    <br><br>
+                    <strong>Ejemplo:</strong><br>
+                    <code>1,DIRECCIÓN GENERAL,DG,1</code><br>
+                    <code>2,RECURSOS HUMANOS,RH,1</code>
+                    <br><br>
+                    <button class="btn btn-sm btn-info mt-2" onclick="descargarPlantilla()">
+                        <i class="fas fa-download"></i> Descargar plantilla de ejemplo
+                    </button>
+                </div>
+                
+                <form id="formImportar">
+                    <div class="mb-3">
+                        <label class="form-label">Seleccionar archivo CSV</label>
+                        <input type="file" class="form-control" id="archivoCSV" accept=".csv" required>
+                    </div>
+                </form>
+                
+                <!-- Resultado de importación -->
+                <div id="resultadoImportacion" class="mt-3" style="display: none;">
+                    <h6>Resultado:</h6>
+                    <div id="resultadoContenido"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="importarCSV()">
+                    <i class="fas fa-upload"></i> Importar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let modalDepartamento;
+let modalImportar;
+
+document.addEventListener('DOMContentLoaded', function() {
+    modalDepartamento = new bootstrap.Modal(document.getElementById('modalDepartamento'));
+    modalImportar = new bootstrap.Modal(document.getElementById('modalImportar'));
+    cargarDepartamentos();
+});
+
+function cargarDepartamentos() {
+    const buscar = document.getElementById('inputBuscar').value;
+    const activo = document.getElementById('selectActivo').value;
+    
+    let url = '/departamentos/listar?';
+    if (buscar) url += `buscar=${encodeURIComponent(buscar)}&`;
+    if (activo) url += `activo=${activo}&`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                mostrarError(data.error);
+                return;
+            }
+            
+            const tbody = document.getElementById('tablaDepartamentos');
+            
+            if (data.departamentos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No hay departamentos</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = data.departamentos.map(dept => `
+                <tr>
+                    <td>
+                        <p class="text-xs font-weight-bold mb-0">${dept.num_departamento}</p>
+                    </td>
+                    <td>
+                        <p class="text-xs font-weight-bold mb-0">${dept.nombre}</p>
+                    </td>
+                    <td>
+                        <p class="text-xs mb-0">${dept.nomenclatura || '-'}</p>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge badge-sm bg-gradient-${dept.activo ? 'success' : 'secondary'}">
+                            ${dept.activo ? 'Activo' : 'Inactivo'}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <button class="btn btn-link text-info p-0 mb-0 me-2" 
+                                onclick="editarDepartamento(${dept.id})" 
+                                title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-link text-danger p-0 mb-0" 
+                                onclick="eliminarDepartamento(${dept.id})" 
+                                title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        })
+        .catch(error => mostrarError('Error al cargar departamentos'));
+}
+
+function mostrarModalCrear() {
+    document.getElementById('modalDepartamentoTitulo').textContent = 'Nuevo Departamento';
+    document.getElementById('formDepartamento').reset();
+    document.getElementById('departamentoId').value = '';
+    document.getElementById('activoDepartamento').checked = true;
+    modalDepartamento.show();
+}
+
+function editarDepartamento(id) {
+    // Buscar departamento en la tabla
+    fetch(`/departamentos/listar`)
+        .then(response => response.json())
+        .then(data => {
+            const dept = data.departamentos.find(d => d.id === id);
+            if (!dept) {
+                mostrarError('Departamento no encontrado');
+                return;
+            }
+            
+            document.getElementById('modalDepartamentoTitulo').textContent = 'Editar Departamento';
+            document.getElementById('departamentoId').value = dept.id;
+            document.getElementById('numDepartamento').value = dept.num_departamento;
+            document.getElementById('nombreDepartamento').value = dept.nombre;
+            document.getElementById('nomenclaturaDepartamento').value = dept.nomenclatura || '';
+            document.getElementById('activoDepartamento').checked = dept.activo;
+            
+            modalDepartamento.show();
+        })
+        .catch(error => mostrarError('Error al cargar departamento'));
+}
+
+function guardarDepartamento() {
+    const id = document.getElementById('departamentoId').value;
+    const datos = {
+        num_departamento: parseInt(document.getElementById('numDepartamento').value),
+        nombre: document.getElementById('nombreDepartamento').value.trim(),
+        nomenclatura: document.getElementById('nomenclaturaDepartamento').value.trim(),
+        activo: document.getElementById('activoDepartamento').checked
+    };
+    
+    if (!datos.nombre || !datos.num_departamento) {
+        mostrarError('Número y nombre son obligatorios');
+        return;
+    }
+    
+    const url = id ? `/departamentos/editar/${id}` : '/departamentos/crear';
+    const method = id ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method: method,
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(datos)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            mostrarError(data.error);
+            return;
+        }
+        
+        mostrarExito(data.mensaje);
+        modalDepartamento.hide();
+        cargarDepartamentos();
+    })
+    .catch(error => mostrarError('Error al guardar departamento'));
+}
+
+function eliminarDepartamento(id) {
+    if (!confirm('¿Está seguro de eliminar este departamento?')) {
+        return;
+    }
+    
+    fetch(`/departamentos/eliminar/${id}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            mostrarError(data.error);
+            return;
+        }
+        
+        mostrarExito(data.mensaje);
+        cargarDepartamentos();
+    })
+    .catch(error => mostrarError('Error al eliminar departamento'));
+}
+
+function mostrarModalImportar() {
+    document.getElementById('formImportar').reset();
+    document.getElementById('resultadoImportacion').style.display = 'none';
+    modalImportar.show();
+}
+
+function importarCSV() {
+    const archivo = document.getElementById('archivoCSV').files[0];
+    
+    if (!archivo) {
+        mostrarError('Seleccione un archivo CSV');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+    
+    fetch('/departamentos/importar-csv', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            mostrarError(data.error);
+            return;
+        }
+        
+        const resultado = data.resultado;
+        let html = `
+            <div class="alert alert-success">
+                <strong>Total procesados:</strong> ${resultado.total}<br>
+                <strong>Insertados:</strong> ${resultado.insertados}<br>
+                <strong>Duplicados:</strong> ${resultado.duplicados}<br>
+                <strong>Errores:</strong> ${resultado.error_count}
+            </div>
+        `;
+        
+        if (resultado.errores.length > 0) {
+            html += '<div class="alert alert-warning"><strong>Detalles de errores:</strong><ul>';
+            resultado.errores.forEach(err => {
+                html += `<li>${err}</li>`;
+            });
+            html += '</ul></div>';
+        }
+        
+        document.getElementById('resultadoContenido').innerHTML = html;
+        document.getElementById('resultadoImportacion').style.display = 'block';
+        
+        cargarDepartamentos();
+        mostrarExito(data.mensaje);
+    })
+    .catch(error => mostrarError('Error al importar CSV'));
+}
+
+function descargarPlantilla() {
+    window.location.href = '/departamentos/descargar-plantilla';
+}
+
+function mostrarError(mensaje) {
+    alert('Error: ' + mensaje);
+}
+
+function mostrarExito(mensaje) {
+    alert(mensaje);
+}
+</script>
+{% endblock %}

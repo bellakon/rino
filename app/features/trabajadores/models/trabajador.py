@@ -12,7 +12,7 @@ class Trabajador:
     
     num_trabajador: int
     nombre: str
-    departamento: Optional[str] = None
+    departamento_id: Optional[int] = None  # FK a tabla departamentos
     tipoPlaza: Optional[str] = None
     ingresoSEPfecha: Optional[str] = None  # YYYY-MM-DD
     captura: Optional[str] = None  # YYYY-MM-DD
@@ -26,7 +26,7 @@ class Trabajador:
             'id': self.id,
             'num_trabajador': self.num_trabajador,
             'nombre': self.nombre,
-            'departamento': self.departamento,
+            'departamento_id': self.departamento_id,
             'tipoPlaza': self.tipoPlaza,
             'ingresoSEPfecha': self.ingresoSEPfecha,
             'captura': self.captura,
@@ -41,7 +41,7 @@ class Trabajador:
             id=data.get('id'),
             num_trabajador=data.get('num_trabajador'),
             nombre=data.get('nombre'),
-            departamento=data.get('departamento'),
+            departamento_id=data.get('departamento_id'),
             tipoPlaza=data.get('tipoPlaza'),
             ingresoSEPfecha=data.get('ingresoSEPfecha'),
             captura=data.get('captura'),

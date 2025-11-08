@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS trabajadores (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     num_trabajador INT UNSIGNED NOT NULL UNIQUE,
     nombre VARCHAR(255) NOT NULL,
-    departamento VARCHAR(100),
+    departamento_id INT,
     tipoPlaza VARCHAR(100),
     ingresoSEPfecha DATE,
     captura DATE,
@@ -19,9 +19,16 @@ CREATE TABLE IF NOT EXISTS trabajadores (
     -- Índices para consultas eficientes
     INDEX idx_num_trabajador (num_trabajador),
     INDEX idx_nombre (nombre),
-    INDEX idx_departamento (departamento),
+    INDEX idx_departamento_id (departamento_id),
     INDEX idx_tipoPlaza (tipoPlaza),
-    INDEX idx_activo (activo)
+    INDEX idx_activo (activo),
+    
+    -- Foreign Key a tabla departamentos
+    CONSTRAINT fk_trabajador_departamento 
+        FOREIGN KEY (departamento_id) 
+        REFERENCES departamentos(id) 
+        ON DELETE SET NULL 
+        ON UPDATE CASCADE
     
 ) ENGINE=InnoDB 
   DEFAULT CHARSET=utf8mb4 
@@ -30,5 +37,5 @@ CREATE TABLE IF NOT EXISTS trabajadores (
 -- ============================================
 -- Ejemplo de inserción
 -- ============================================
--- INSERT INTO trabajadores (num_trabajador, nombre, departamento, tipoPlaza, ingresoSEPfecha, captura) 
--- VALUES (2, 'Juan Pérez', 'Recursos Humanos', 'Base', '2020-01-15', '2024-10-19');
+-- INSERT INTO trabajadores (num_trabajador, nombre, departamento_id, tipoPlaza, ingresoSEPfecha, captura) 
+-- VALUES (2, 'Juan Pérez', 1, 'Base', '2020-01-15', '2024-10-19');
