@@ -54,5 +54,19 @@
             </div>
         </div>
     </div>
+
+    <!-- Tarjeta: Migrar a RinoTime -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-cloud-upload display-1 text-warning"></i>
+                <h5 class="card-title mt-3">Migrar a RinoTime</h5>
+                <p class="card-text">Sincronizar asistencias con RinoTime</p>
+                <a href="{{ url_for('migrar_datos.index') }}" class="btn btn-warning">
+                    <i class="bi bi-arrow-left-right"></i> Migrar Datos
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

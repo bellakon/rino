@@ -28,6 +28,23 @@ class CheckadoresConfig:
             'ubicacion': 'Edificio LISC',
             'activo': True
         },
+        {
+            'id': 'no_docentes_1',
+            'nombre': 'NO DOCENTES ACB',
+            'ip': '10.10.18.6',
+            'puerto': 4370,
+            'ubicacion': 'Edificio ACB',
+            'activo': True
+        },
+        {
+            'id': 'no_docentes_2',
+            'nombre': 'NO DOCENTES LISC',
+            'ip': '10.10.18.12',
+            'puerto': 4370,
+            'ubicacion': 'Edificio LISC',
+            'activo': True
+        },
+
     ]
     
     # Timeout para conexión (segundos)

@@ -32,6 +32,7 @@ def create_app():
             os.path.join(base_dir, 'features/checadores/templates'),
             os.path.join(base_dir, 'features/asistencias/templates'),
             os.path.join(base_dir, 'features/trabajadores/templates'),
+            os.path.join(base_dir, 'features/migrar_datos/templates'),
         ])
     ])
     app.jinja_loader = loader
@@ -40,10 +41,12 @@ def create_app():
     from app.features.checadores.routes.checador_routes import checadores_bp
     from app.features.asistencias.routes.asistencia_routes import asistencias_bp
     from app.features.trabajadores.routes.trabajador_routes import trabajadores_bp
+    from app.features.migrar_datos.routes.migrar_datos_routes import migrar_datos_bp
     
     app.register_blueprint(checadores_bp)
     app.register_blueprint(asistencias_bp)
     app.register_blueprint(trabajadores_bp)
+    app.register_blueprint(migrar_datos_bp)
     
     # Ruta principal
     @app.route('/')

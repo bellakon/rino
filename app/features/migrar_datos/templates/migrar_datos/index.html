@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+
+{% block title %}Migrar Datos a RinoTime{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="bi bi-cloud-upload"></i> Migrar Datos a RinoTime
+                </h2>
+            </div>
+
+            <!-- Estado de Conexión -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <i class="bi bi-hdd-network"></i> Estado de Conexión
+                </div>
+                <div class="card-body">
+                    <div id="estadoConexion">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Verificando...</span>
+                            </div>
+                            <p class="mt-2">Verificando conexión...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulario de Migración -->
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <i class="bi bi-arrow-left-right"></i> Configuración de Migración
+                </div>
+                <div class="card-body">
+                    <form id="formMigracion">
+                        <div class="row">
+                            <!-- Checador Origen (IZQUIERDA) -->
+                            <div class="col-md-6 mb-3">
+                                <label for="checador" class="form-label">
+                                    <i class="bi bi-download"></i> Checador de Origen *
+                                </label>
+                                <select class="form-select" id="checador" name="checador" required>
+                                    <option value="">Cargando checadores...</option>
+                                </select>
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i> Desde dónde se obtienen las asistencias
+                                </small>
+                            </div>
+
+                            <!-- Terminal Destino (DERECHA) -->
+                            <div class="col-md-6 mb-3">
+                                <label for="terminal_sn" class="form-label">
+                                    <i class="bi bi-upload"></i> Terminal Destino *
+                                </label>
+                                <select class="form-select" id="terminal_sn" name="terminal_sn" required>
+                                    <option value="">Seleccione un terminal...</option>
+                                    <option value="CLN5204760269">CLN5204760269 - Edificio ACB</option>
+                                    <option value="CLN5204760200">CLN5204760200 - Edificio LISC</option>
+                                </select>
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i> Hacia dónde se envían las asistencias
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-info" onclick="contarRegistros()">
+                                <i class="bi bi-calculator"></i> Contar Registros
+                            </button>
+                            <button type="button" class="btn btn-success" onclick="confirmarMigracion()">
+                                <i class="bi bi-cloud-upload"></i> Migrar Datos
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Contador de registros -->
+                    <div id="contadorRegistros" class="mt-3" style="display: none;">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> 
+                            <strong id="totalRegistros">0</strong> registros se migrarán con los filtros actuales.
+                        </div>
+                    </div>
+
+                    <!-- Progreso -->
+                    <div id="progresoMigracion" class="mt-4" style="display: none;">
+                        <h5>Progreso de Migración</h5>
+                        <div class="progress mb-2" style="height: 25px;">
+                            <div id="barraProgreso" 
+                                 class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" 
+                                 style="width: 0%">
+                                0%
+                            </div>
+                        </div>
+                        <div id="estadoMigracion" class="text-muted">Iniciando...</div>
+                        <div id="detallesMigracion" class="mt-2">
+                            <small class="text-muted">
+                                Procesadas: <strong id="procesadas">0</strong> | 
+                                Insertadas: <strong id="insertadas" class="text-success">0</strong> | 
+                                Duplicadas: <strong id="duplicadas" class="text-warning">0</strong> | 
+                                Errores: <strong id="errores" class="text-danger">0</strong>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmación -->
+<div class="modal fade" id="modalConfirmacion" tabindex="-1" aria-labelledby="modalConfirmacionLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="modalConfirmacionLabel">
+                    <i class="bi bi-exclamation-triangle"></i> Confirmar Migración
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro de migrar <strong id="totalMigrar">0</strong> registros a RinoTime?</p>
+                <p class="text-muted mb-0">
+                    <small>
+                        <strong>Terminal:</strong> <span id="terminalMigrar"></span><br>
+                        <strong>Checador:</strong> <span id="checadorMigrar"></span>
+                    </small>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="iniciarMigracion()">
+                    <i class="bi bi-check-circle"></i> Confirmar Migración
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Verificar conexión y cargar checadores al cargar
+document.addEventListener('DOMContentLoaded', function() {
+    verificarConexion();
+    cargarChecadores();
+});
+
+function cargarChecadores() {
+    fetch('/migrar-datos/checadores-disponibles')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('checador').innerHTML = '<option value="">Error al cargar</option>';
+                return;
+            }
+            
+            const select = document.getElementById('checador');
+            select.innerHTML = '<option value="">Seleccione un checador de origen...</option>';
+            
+            data.checadores.forEach(checador => {
+                const option = document.createElement('option');
+                option.value = checador.serial;
+                
+                // Formato mejorado con múltiples datos
+                const asistencias = checador.total_asistencias.toLocaleString();
+                let texto = `${checador.serial}`;
+                
+                if (checador.nombre !== 'Sin nombre') {
+                    texto += ` - ${checador.nombre}`;
+                }
+                
+                if (checador.ubicacion !== 'Sin ubicación') {
+                    texto += ` (${checador.ubicacion})`;
+                }
+                
+                texto += ` - ${asistencias} registros`;
+                
+                option.textContent = texto;
+                
+                // Agregar título para hover con más detalles
+                option.title = `Serial: ${checador.serial}\nNombre: ${checador.nombre}\nUbicación: ${checador.ubicacion}\nTotal asistencias: ${asistencias}\nPrimera fecha: ${checador.primera_fecha}\nÚltima fecha: ${checador.ultima_fecha}`;
+                
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            document.getElementById('checador').innerHTML = '<option value="">Error al cargar</option>';
+            console.error('Error al cargar checadores:', error);
+        });
+}
+
+function verificarConexion() {
+    fetch('/migrar-datos/verificar-conexion')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('estadoConexion').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-x-circle"></i> <strong>Error de conexión:</strong> ${data.error}
+                    </div>
+                `;
+                return;
+            }
+
+            const badge = data.conectado ? 'success' : 'danger';
+            const icon = data.conectado ? 'check-circle' : 'x-circle';
+            const tablaIcon = data.tabla_existe ? 'check-circle-fill text-success' : 'x-circle-fill text-danger';
+            
+            document.getElementById('estadoConexion').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Estado:</strong> <span class="badge bg-${badge}"><i class="bi bi-${icon}"></i> ${data.conectado ? 'Conectado' : 'Desconectado'}</span></p>
+                        <p><strong>Host:</strong> ${data.host}:${data.puerto}</p>
+                        <p><strong>Base de Datos:</strong> ${data.base_datos}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Tabla iclock_transaction:</strong> <i class="bi bi-${tablaIcon}"></i> ${data.tabla_existe ? 'Existe' : 'No existe'}</p>
+                        <p><strong>Registros en RinoTime:</strong> ${data.registros_rinotime.toLocaleString()}</p>
+                    </div>
+                </div>
+            `;
+        })
+        .catch(error => {
+            document.getElementById('estadoConexion').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-x-circle"></i> Error al verificar conexión: ${error.message}
+                </div>
+            `;
+        });
+}
+
+function contarRegistros() {
+    const formData = new FormData(document.getElementById('formMigracion'));
+    const checador = formData.get('checador');
+    
+    if (!checador) {
+        alert('Debe seleccionar un checador de origen');
+        return;
+    }
+    
+    const params = new URLSearchParams();
+    params.append('checador', checador);
+    
+    fetch(`/migrar-datos/contar-asistencias?${params.toString()}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            document.getElementById('totalRegistros').textContent = data.total.toLocaleString();
+            document.getElementById('contadorRegistros').style.display = 'block';
+        })
+        .catch(error => {
+            alert('Error al contar registros: ' + error.message);
+        });
+}
+
+function confirmarMigracion() {
+    const terminal_sn = document.getElementById('terminal_sn').value;
+    const checador = document.getElementById('checador').value;
+    
+    if (!terminal_sn) {
+        alert('Debe seleccionar un terminal');
+        return;
+    }
+    
+    if (!checador) {
+        alert('Debe seleccionar un checador de origen');
+        return;
+    }
+    
+    // Primero contar registros
+    const params = new URLSearchParams();
+    params.append('checador', checador);
+    
+    fetch(`/migrar-datos/contar-asistencias?${params.toString()}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            if (data.total === 0) {
+                alert('No hay registros para migrar del checador seleccionado');
+                return;
+            }
+            
+            // Mostrar modal de confirmación
+            document.getElementById('totalMigrar').textContent = data.total.toLocaleString();
+            
+            const terminalTexto = terminal_sn === 'CLN5204760269' ? 'CLN5204760269 - Edificio ACB' : 'CLN5204760200 - Edificio LISC';
+            document.getElementById('terminalMigrar').textContent = terminalTexto;
+            
+            document.getElementById('checadorMigrar').textContent = checador;
+            
+            const modal = new bootstrap.Modal(document.getElementById('modalConfirmacion'));
+            modal.show();
+        })
+        .catch(error => {
+            alert('Error: ' + error.message);
+        });
+}
+
+function iniciarMigracion() {
+    // Cerrar modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalConfirmacion'));
+    modal.hide();
+    
+    // Mostrar progreso
+    document.getElementById('progresoMigracion').style.display = 'block';
+    document.getElementById('barraProgreso').style.width = '0%';
+    document.getElementById('barraProgreso').textContent = '0%';
+    
+    // Preparar datos
+    const formData = new FormData(document.getElementById('formMigracion'));
+    const data = {
+        terminal_sn: formData.get('terminal_sn'),
+        checador: formData.get('checador')
+    };
+    
+    // Crear EventSource para streaming
+    fetch('/migrar-datos/migrar', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        
+        function read() {
+            reader.read().then(({ done, value }) => {
+                if (done) return;
+                
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+                
+                lines.forEach(line => {
+                    if (line.startsWith('data: ')) {
+                        const jsonData = line.substring(6);
+                        try {
+                            const progreso = JSON.parse(jsonData);
+                            actualizarProgreso(progreso);
+                        } catch (e) {
+                            console.error('Error parsing JSON:', e);
+                        }
+                    }
+                });
+                
+                read();
+            });
+        }
+        
+        read();
+    })
+    .catch(error => {
+        alert('Error en migración: ' + error.message);
+        document.getElementById('estadoMigracion').textContent = 'Error: ' + error.message;
+    });
+}
+
+function actualizarProgreso(progreso) {
+    if (progreso.error) {
+        document.getElementById('estadoMigracion').innerHTML = `<span class="text-danger">${progreso.error}</span>`;
+        document.getElementById('barraProgreso').classList.remove('progress-bar-animated');
+        document.getElementById('barraProgreso').classList.add('bg-danger');
+        return;
+    }
+    
+    const porcentaje = progreso.progreso || 0;
+    document.getElementById('barraProgreso').style.width = porcentaje + '%';
+    document.getElementById('barraProgreso').textContent = porcentaje + '%';
+    document.getElementById('estadoMigracion').textContent = progreso.estado || '';
+    
+    if (progreso.procesadas !== undefined) {
+        document.getElementById('procesadas').textContent = progreso.procesadas || 0;
+    }
+    if (progreso.insertadas !== undefined) {
+        document.getElementById('insertadas').textContent = progreso.insertadas || 0;
+    }
+    if (progreso.duplicadas !== undefined) {
+        document.getElementById('duplicadas').textContent = progreso.duplicadas || 0;
+    }
+    if (progreso.errores !== undefined) {
+        document.getElementById('errores').textContent = progreso.errores || 0;
+    }
+    
+    if (progreso.finalizado) {
+        document.getElementById('barraProgreso').classList.remove('progress-bar-animated');
+        if (!progreso.error) {
+            document.getElementById('barraProgreso').classList.add('bg-success');
+            
+            // Actualizar estado de conexión para refrescar contadores
+            setTimeout(() => {
+                verificarConexion();
+            }, 1000);
+        }
+    }
+}
+</script>
+{% endblock %}
