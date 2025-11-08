@@ -9,16 +9,68 @@ from app.features.asistencias.models import Asistencia
 class ObtenerAsistenciasUseCase:
     """Obtiene asistencias de la base de datos y las convierte a modelos"""
     
-    def ejecutar(self):
+    def ejecutar(self, num_trabajador=None, checador=None, fecha_inicio=None, fecha_fin=None, page=1, per_page=50):
         """
-        Ejecuta SELECT simple y convierte a modelos Asistencia
+        Ejecuta SELECT con filtros y paginación, convierte a modelos Asistencia
+        
+        Args:
+            num_trabajador: Filtro opcional por número de trabajador
+            checador: Filtro opcional por checador (serial)
+            fecha_inicio: Filtro opcional por fecha inicial (YYYY-MM-DD)
+            fecha_fin: Filtro opcional por fecha final (YYYY-MM-DD)
+            page: Número de página (default: 1)
+            per_page: Registros por página (default: 50)
         
         Returns:
-            tuple: (lista de objetos Asistencia, error)
+            tuple: (dict con asistencias, total, page, per_page, error)
         """
-        query = "SELECT * FROM asistencias ORDER BY fecha DESC, hora DESC LIMIT 100"
+        # Construir WHERE clauses
+        where_clauses = []
+        params = []
         
-        registros, error = query_executor.ejecutar(query)
+        if num_trabajador:
+            where_clauses.append("num_trabajador = %s")
+            params.append(num_trabajador)
+        
+        if checador:
+            where_clauses.append("checador LIKE %s")
+            params.append(f"%{checador}%")
+        
+        # Filtros de fecha
+        if fecha_inicio and fecha_fin:
+            # Rango de fechas
+            where_clauses.append("fecha BETWEEN %s AND %s")
+            params.append(fecha_inicio)
+            params.append(fecha_fin)
+        elif fecha_inicio:
+            # Solo fecha inicial (búsqueda por fecha específica)
+            where_clauses.append("fecha = %s")
+            params.append(fecha_inicio)
+        
+        where_sql = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
+        
+        # Obtener total de registros
+        count_query = f"SELECT COUNT(*) as total FROM asistencias{where_sql}"
+        count_result, error = query_executor.ejecutar(count_query, tuple(params) if params else None)
+        
+        if error:
+            return None, error
+        
+        total = count_result[0]['total'] if count_result else 0
+        
+        # Calcular offset
+        offset = (page - 1) * per_page
+        
+        # Obtener registros paginados
+        query = f"""
+            SELECT * FROM asistencias
+            {where_sql}
+            ORDER BY fecha DESC, hora DESC
+            LIMIT %s OFFSET %s
+        """
+        params.extend([per_page, offset])
+        
+        registros, error = query_executor.ejecutar(query, tuple(params))
         
         if error:
             return None, error
@@ -26,7 +78,12 @@ class ObtenerAsistenciasUseCase:
         # Convertir diccionarios a objetos Asistencia
         asistencias = [Asistencia.from_dict(reg) for reg in registros]
         
-        return asistencias, None
+        return {
+            'asistencias': asistencias,
+            'total': total,
+            'page': page,
+            'per_page': per_page
+        }, None
 
 
 # Instancia singleton

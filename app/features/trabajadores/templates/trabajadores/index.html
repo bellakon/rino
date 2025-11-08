@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block title %}Trabajadores{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="bi bi-people-fill"></i> Trabajadores
+        </h1>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros de Búsqueda</h5>
+            </div>
+            <div class="card-body">
+                <form method="get" action="{{ url_for('trabajadores.index') }}" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="num_trabajador" class="form-label">Número de Trabajador</label>
+                        <input type="number" 
+                               class="form-control" 
+                               id="num_trabajador" 
+                               name="num_trabajador" 
+                               value="{{ num_trabajador_filter or '' }}"
+                               placeholder="Ej: 12345">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="tipoPlaza" class="form-label">Tipo de Plaza</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="tipoPlaza" 
+                               name="tipoPlaza" 
+                               value="{{ tipoPlaza_filter }}"
+                               placeholder="Ej: Base, Confianza">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                        <a href="{{ url_for('trabajadores.index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Limpiar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de Trabajadores -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Registro de Trabajadores</h5>
+                <div>
+                    <span class="badge bg-light text-dark fs-6 me-2">
+                        Total: {{ total | number_format }} trabajadores
+                    </span>
+                    <button type="button" class="btn btn-primary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalCrear">
+                        <i class="bi bi-person-plus"></i> Nuevo Trabajador
+                    </button>
+                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportar">
+                        <i class="bi bi-upload"></i> Importar CSV
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if trabajadores %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Num. Trabajador</th>
+                                <th>Nombre</th>
+                                <th>Departamento</th>
+                                <th>Tipo Plaza</th>
+                                <th>Activo</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for trabajador in trabajadores %}
+                            <tr>
+                                <td><strong>{{ trabajador.num_trabajador }}</strong></td>
+                                <td>{{ trabajador.nombre }}</td>
+                                <td>{{ trabajador.departamento or '-' }}</td>
+                                <td>{{ trabajador.tipoPlaza or '-' }}</td>
+                                <td>
+                                    {% if trabajador.activo %}
+                                        <span class="badge bg-success">Activo</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactivo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" 
+                                                class="btn btn-sm btn-warning" 
+                                                onclick="editarTrabajador({{ trabajador.id }})"
+                                                title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button type="button" 
+                                                class="btn btn-sm btn-info" 
+                                                onclick="verChecadores({{ trabajador.num_trabajador }})"
+                                                title="Ver checadores">
+                                            <i class="bi bi-clock-history"></i>
+                                        </button>
+                                        <button type="button" 
+                                                class="btn btn-sm btn-danger" 
+                                                onclick="confirmarEliminar({{ trabajador.id }}, '{{ trabajador.nombre }}', {{ trabajador.num_trabajador }})"
+                                                title="Eliminar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Paginación -->
+                {% if total_pages > 1 %}
+                <nav aria-label="Navegación de páginas">
+                    <ul class="pagination justify-content-center mb-0">
+                        <!-- Anterior -->
+                        <li class="page-item {% if not has_prev %}disabled{% endif %}">
+                            <a class="page-link" 
+                               href="{% if has_prev %}{{ url_for('trabajadores.index', page=page-1, num_trabajador=num_trabajador_filter, tipoPlaza=tipoPlaza_filter) }}{% else %}#{% endif %}">
+                                <i class="bi bi-chevron-left"></i> Anterior
+                            </a>
+                        </li>
+                        
+                        <!-- Páginas -->
+                        {% set start_page = [1, page - 2] | max %}
+                        {% set end_page = [total_pages, page + 2] | min %}
+                        
+                        {% if start_page > 1 %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('trabajadores.index', page=1, num_trabajador=num_trabajador_filter, tipoPlaza=tipoPlaza_filter) }}">1</a>
+                            </li>
+                            {% if start_page > 2 %}
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% endif %}
+                        {% endif %}
+                        
+                        {% for p in range(start_page, end_page + 1) %}
+                            <li class="page-item {% if p == page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('trabajadores.index', page=p, num_trabajador=num_trabajador_filter, tipoPlaza=tipoPlaza_filter) }}">{{ p }}</a>
+                            </li>
+                        {% endfor %}
+                        
+                        {% if end_page < total_pages %}
+                            {% if end_page < total_pages - 1 %}
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% endif %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('trabajadores.index', page=total_pages, num_trabajador=num_trabajador_filter, tipoPlaza=tipoPlaza_filter) }}">{{ total_pages }}</a>
+                            </li>
+                        {% endif %}
+                        
+                        <!-- Siguiente -->
+                        <li class="page-item {% if not has_next %}disabled{% endif %}">
+                            <a class="page-link" 
+                               href="{% if has_next %}{{ url_for('trabajadores.index', page=page+1, num_trabajador=num_trabajador_filter, tipoPlaza=tipoPlaza_filter) }}{% else %}#{% endif %}">
+                                Siguiente <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                
+                <!-- Info de página -->
+                <div class="text-center text-muted mt-3">
+                    <small>
+                        Página {{ page }} de {{ total_pages }} 
+                        (mostrando {{ trabajadores | length }} de {{ total | number_format }} trabajadores)
+                    </small>
+                </div>
+                {% endif %}
+                
+                {% else %}
+                <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle"></i> 
+                    {% if num_trabajador_filter or tipoPlaza_filter %}
+                        No se encontraron trabajadores con los filtros aplicados.
+                    {% else %}
+                        No hay trabajadores registrados.
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('home') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver al Inicio
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ver Checadores -->
+{% include 'trabajadores/modal_checadores.html' %}
+
+<!-- Modal Importar CSV -->
+{% include 'trabajadores/modal_importar.html' %}
+
+<!-- Modal Crear Trabajador -->
+{% include 'trabajadores/modal_crear.html' %}
+
+<!-- Modal Editar Trabajador -->
+{% include 'trabajadores/modal_editar.html' %}
+
+<!-- Modal Eliminar Trabajador -->
+{% include 'trabajadores/modal_eliminar.html' %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function editarTrabajador(id) {
+    // Cargar datos del trabajador
+    fetch(`/trabajadores/editar/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+            
+            // Llenar formulario
+            document.getElementById('trabajador_id_editar').value = data.id;
+            document.getElementById('num_trabajador_editar').value = data.num_trabajador;
+            document.getElementById('nombre_editar').value = data.nombre;
+            document.getElementById('departamento_editar').value = data.departamento || '';
+            document.getElementById('tipoPlaza_editar').value = data.tipoPlaza || '';
+            document.getElementById('ingresoSEPfecha_editar').value = data.ingresoSEPfecha || '';
+            document.getElementById('movimiento_editar').value = data.movimiento || '';
+            document.getElementById('activo_editar').value = data.activo ? '1' : '0';
+            
+            // Configurar action del form
+            document.getElementById('formEditar').action = `/trabajadores/actualizar/${id}`;
+            
+            // Mostrar modal
+            const modal = new bootstrap.Modal(document.getElementById('modalEditar'));
+            modal.show();
+        })
+        .catch(error => {
+            alert('Error al cargar datos: ' + error);
+        });
+}
+
+function confirmarEliminar(id, nombre, numTrabajador) {
+    // Llenar información del trabajador
+    document.getElementById('trabajador_nombre_eliminar').textContent = nombre;
+    document.getElementById('trabajador_num_eliminar').textContent = numTrabajador;
+    
+    // Configurar action del form
+    document.getElementById('formEliminar').action = `/trabajadores/eliminar/${id}`;
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('modalEliminar'));
+    modal.show();
+}
+
+function verChecadores(numTrabajador) {
+    const modal = new bootstrap.Modal(document.getElementById('modalChecadores'));
+    const listado = document.getElementById('listadoChecadores');
+    
+    // Mostrar loading
+    listado.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
+    modal.show();
+    
+    // Consultar checadores
+    fetch(`/trabajadores/checadores?num_trabajador=${numTrabajador}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                listado.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                return;
+            }
+            
+            if (data.checadores.length === 0) {
+                listado.innerHTML = '<div class="alert alert-warning">No hay checadores activos disponibles.</div>';
+                return;
+            }
+            
+            let html = '<div class="list-group">';
+            data.checadores.forEach(checador => {
+                let estadoBadge = '';
+                let accion = '';
+                
+                if (checador.error_conexion) {
+                    estadoBadge = '<span class="badge bg-danger">Error de conexión</span>';
+                    accion = `<small class="text-muted d-block">${checador.error_conexion}</small>`;
+                } else if (checador.registrado) {
+                    estadoBadge = '<span class="badge bg-success">Registrado</span>';
+                } else {
+                    estadoBadge = '<span class="badge bg-secondary">No registrado</span>';
+                    accion = '<button class="btn btn-sm btn-primary mt-2" onclick="alert(\'Funcionalidad pendiente de implementar\')"><i class="bi bi-person-plus"></i> Registrar</button>';
+                }
+                
+                html += `
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">${checador.nombre}</h6>
+                                <small class="text-muted">IP: ${checador.ip} | Puerto: ${checador.puerto}</small>
+                                ${checador.ubicacion ? `<br><small class="text-muted">Ubicación: ${checador.ubicacion}</small>` : ''}
+                                ${accion}
+                            </div>
+                            <div>
+                                ${estadoBadge}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            listado.innerHTML = html;
+        })
+        .catch(error => {
+            listado.innerHTML = `<div class="alert alert-danger">Error al consultar: ${error}</div>`;
+        });
+}
+</script>
+{% endblock %}

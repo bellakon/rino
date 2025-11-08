@@ -14,10 +14,10 @@ class CheckadoresConfig:
     CHECADORES = [
         {
             'id': 'docentes_1',
-            'nombre': 'Checador Principal',
+            'nombre': 'DOCENTES ACB',
             'ip': '10.10.18.11',
             'puerto': 4370,
-            'ubicacion': 'Entrada Principal',
+            'ubicacion': 'Edificio ACB',
             'activo': True
         },
     ]

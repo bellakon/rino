@@ -14,6 +14,15 @@ def create_app():
     app.config.from_object(Config)
     app.secret_key = Config.SECRET_KEY
     
+    # Registrar filtros de Jinja personalizados
+    @app.template_filter('number_format')
+    def number_format_filter(value):
+        """Formatea números con separadores de miles"""
+        try:
+            return "{:,}".format(int(value)).replace(",", ",")
+        except (ValueError, TypeError):
+            return value
+    
     # Registrar template folders adicionales por feature (rutas absolutas)
     import jinja2
     base_dir = os.path.abspath(os.path.dirname(__file__))
@@ -22,6 +31,7 @@ def create_app():
         jinja2.FileSystemLoader([
             os.path.join(base_dir, 'features/checadores/templates'),
             os.path.join(base_dir, 'features/asistencias/templates'),
+            os.path.join(base_dir, 'features/trabajadores/templates'),
         ])
     ])
     app.jinja_loader = loader
@@ -29,9 +39,11 @@ def create_app():
     # Registrar blueprints de features
     from app.features.checadores.routes.checador_routes import checadores_bp
     from app.features.asistencias.routes.asistencia_routes import asistencias_bp
+    from app.features.trabajadores.routes.trabajador_routes import trabajadores_bp
     
     app.register_blueprint(checadores_bp)
     app.register_blueprint(asistencias_bp)
+    app.register_blueprint(trabajadores_bp)
     
     # Ruta principal
     @app.route('/')

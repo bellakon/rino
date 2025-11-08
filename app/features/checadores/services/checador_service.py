@@ -152,6 +152,14 @@ class ChecadorService:
             return None, error
         
         try:
+            # Obtener número de serie del dispositivo
+            serial_number = None
+            try:
+                serial_number = conn.get_serialnumber()
+            except:
+                # Si falla, usar IP como fallback
+                serial_number = ip
+            
             asistencias = conn.get_attendance()
             
             # Convertir a diccionarios compatibles con modelo Asistencia
@@ -165,7 +173,7 @@ class ChecadorService:
                     'num_trabajador': int(asistencia.user_id),
                     'fecha': timestamp.strftime('%Y-%m-%d'),
                     'hora': timestamp.strftime('%H:%M:%S'),
-                    'checador': ip  # IP del checador como identificador
+                    'checador': serial_number  # Número de serie del checador
                 })
             
             self.desconectar(conn)

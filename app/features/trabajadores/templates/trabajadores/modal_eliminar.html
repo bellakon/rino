@@ -1,0 +1,32 @@
+<!-- Modal para confirmar eliminación de trabajador -->
+<div class="modal fade" id="modalEliminar" tabindex="-1" aria-labelledby="modalEliminarLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="modalEliminarLabel">
+                    <i class="bi bi-exclamation-triangle"></i> Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" id="formEliminar">
+                <div class="modal-body">
+                    <p class="mb-3">¿Está seguro que desea eliminar este trabajador?</p>
+                    <div class="alert alert-warning">
+                        <strong>Trabajador:</strong> <span id="trabajador_nombre_eliminar"></span><br>
+                        <strong>Número:</strong> <span id="trabajador_num_eliminar"></span>
+                    </div>
+                    <p class="text-danger mb-0">
+                        <i class="bi bi-exclamation-circle"></i> 
+                        Esta acción no se puede deshacer.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Eliminar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

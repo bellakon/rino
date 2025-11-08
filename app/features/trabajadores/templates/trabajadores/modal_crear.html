@@ -1,0 +1,83 @@
+<!-- Modal para crear nuevo trabajador -->
+<div class="modal fade" id="modalCrear" tabindex="-1" aria-labelledby="modalCrearLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalCrearLabel">
+                    <i class="bi bi-person-plus"></i> Nuevo Trabajador
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{{ url_for('trabajadores.crear') }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="num_trabajador_crear" class="form-label">Número de Trabajador *</label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="num_trabajador_crear" 
+                                   name="num_trabajador" 
+                                   required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="nombre_crear" class="form-label">Nombre Completo *</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="nombre_crear" 
+                                   name="nombre" 
+                                   required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="departamento_crear" class="form-label">Departamento</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="departamento_crear" 
+                                   name="departamento">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="tipoPlaza_crear" class="form-label">Tipo de Plaza</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="tipoPlaza_crear" 
+                                   name="tipoPlaza" 
+                                   placeholder="Ej: Base, Confianza">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ingresoSEPfecha_crear" class="form-label">Fecha de Ingreso SEP</label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="ingresoSEPfecha_crear" 
+                                   name="ingresoSEPfecha">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="movimiento_crear" class="form-label">Movimiento</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="movimiento_crear" 
+                                   name="movimiento">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="activo_crear" class="form-label">Estado</label>
+                            <select class="form-select" id="activo_crear" name="activo">
+                                <option value="1" selected>Activo</option>
+                                <option value="0">Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

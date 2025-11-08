@@ -43,6 +43,9 @@
                         <a class="nav-link" href="{{ url_for('checadores.index') }}">Checadores</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('trabajadores.index') }}">Trabajadores</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('asistencias.index') }}">Asistencias</a>
                     </li>
                 </ul>
@@ -80,6 +83,12 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom Jinja Filters -->
+    <script>
+        // Formateo de números en JavaScript para clientes
+        const numberFormatter = new Intl.NumberFormat('es-MX');
+    </script>
     
     {% block extra_js %}{% endblock %}
 </body>

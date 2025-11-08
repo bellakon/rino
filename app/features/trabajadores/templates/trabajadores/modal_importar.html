@@ -1,0 +1,39 @@
+<!-- Modal para importar trabajadores desde CSV -->
+<div class="modal fade" id="modalImportar" tabindex="-1" aria-labelledby="modalImportarLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="modalImportarLabel">
+                    <i class="bi bi-upload"></i> Importar Trabajadores desde CSV
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{{ url_for('trabajadores.importar') }}" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="archivo_csv" class="form-label">Seleccionar archivo CSV</label>
+                        <input type="file" 
+                               class="form-control" 
+                               id="archivo_csv" 
+                               name="archivo_csv" 
+                               accept=".csv"
+                               required>
+                        <div class="form-text">
+                            El archivo debe tener las columnas: <code>num</code>, <code>nombre</code>
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> 
+                        Los trabajadores duplicados (mismo num_trabajador) serán ignorados automáticamente.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-upload"></i> Importar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -16,6 +16,8 @@ class Trabajador:
     tipoPlaza: Optional[str] = None
     ingresoSEPfecha: Optional[str] = None  # YYYY-MM-DD
     captura: Optional[str] = None  # YYYY-MM-DD
+    activo: Optional[bool] = True
+    movimiento: Optional[str] = None
     id: Optional[int] = None
     
     def to_dict(self):
@@ -27,7 +29,9 @@ class Trabajador:
             'departamento': self.departamento,
             'tipoPlaza': self.tipoPlaza,
             'ingresoSEPfecha': self.ingresoSEPfecha,
-            'captura': self.captura
+            'captura': self.captura,
+            'activo': self.activo,
+            'movimiento': self.movimiento
         }
     
     @classmethod
@@ -40,5 +44,7 @@ class Trabajador:
             departamento=data.get('departamento'),
             tipoPlaza=data.get('tipoPlaza'),
             ingresoSEPfecha=data.get('ingresoSEPfecha'),
-            captura=data.get('captura')
+            captura=data.get('captura'),
+            activo=data.get('activo', True),
+            movimiento=data.get('movimiento')
         )

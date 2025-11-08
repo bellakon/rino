@@ -1,0 +1,83 @@
+<!-- Modal para editar trabajador -->
+<div class="modal fade" id="modalEditar" tabindex="-1" aria-labelledby="modalEditarLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="modalEditarLabel">
+                    <i class="bi bi-pencil-square"></i> Editar Trabajador
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" id="formEditar">
+                <div class="modal-body">
+                    <input type="hidden" id="trabajador_id_editar" name="id">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="num_trabajador_editar" class="form-label">Número de Trabajador *</label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="num_trabajador_editar" 
+                                   name="num_trabajador" 
+                                   required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="nombre_editar" class="form-label">Nombre Completo *</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="nombre_editar" 
+                                   name="nombre" 
+                                   required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="departamento_editar" class="form-label">Departamento</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="departamento_editar" 
+                                   name="departamento">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="tipoPlaza_editar" class="form-label">Tipo de Plaza</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="tipoPlaza_editar" 
+                                   name="tipoPlaza">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ingresoSEPfecha_editar" class="form-label">Fecha de Ingreso SEP</label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="ingresoSEPfecha_editar" 
+                                   name="ingresoSEPfecha">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="movimiento_editar" class="form-label">Movimiento</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="movimiento_editar" 
+                                   name="movimiento">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="activo_editar" class="form-label">Estado</label>
+                            <select class="form-select" id="activo_editar" name="activo">
+                                <option value="1">Activo</option>
+                                <option value="0">Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-save"></i> Actualizar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -11,11 +11,72 @@
     </div>
 </div>
 
+<!-- Filtros -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros de Búsqueda</h5>
+            </div>
+            <div class="card-body">
+                <form method="get" action="{{ url_for('asistencias.index') }}" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="num_trabajador" class="form-label">Número de Trabajador</label>
+                        <input type="number" 
+                               class="form-control" 
+                               id="num_trabajador" 
+                               name="num_trabajador" 
+                               value="{{ num_trabajador_filter or '' }}"
+                               placeholder="Ej: 12345">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="checador" class="form-label">Checador (Serial)</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="checador" 
+                               name="checador" 
+                               value="{{ checador_filter }}"
+                               placeholder="Ej: BPKP204160007">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="fecha_inicio" class="form-label">Fecha Inicio</label>
+                        <input type="date" 
+                               class="form-control" 
+                               id="fecha_inicio" 
+                               name="fecha_inicio" 
+                               value="{{ fecha_inicio_filter }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="fecha_fin" class="form-label">Fecha Fin</label>
+                        <input type="date" 
+                               class="form-control" 
+                               id="fecha_fin" 
+                               name="fecha_fin" 
+                               value="{{ fecha_fin_filter }}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                        <a href="{{ url_for('asistencias.index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Limpiar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de Asistencias -->
 <div class="row">
     <div class="col-12">
         <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Registros de Asistencias ({{ asistencias|length }})</h5>
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Registros de Asistencias</h5>
+                <span class="badge bg-light text-dark fs-6">
+                    Total: {{ total | number_format }} registros
+                </span>
             </div>
             <div class="card-body">
                 {% if asistencias %}
@@ -43,9 +104,74 @@
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Paginación -->
+                {% if total_pages > 1 %}
+                <nav aria-label="Navegación de páginas">
+                    <ul class="pagination justify-content-center mb-0">
+                        <!-- Anterior -->
+                        <li class="page-item {% if not has_prev %}disabled{% endif %}">
+                            <a class="page-link" 
+                               href="{% if has_prev %}{{ url_for('asistencias.index', page=page-1, num_trabajador=num_trabajador_filter, checador=checador_filter, fecha_inicio=fecha_inicio_filter, fecha_fin=fecha_fin_filter) }}{% else %}#{% endif %}">
+                                <i class="bi bi-chevron-left"></i> Anterior
+                            </a>
+                        </li>
+                        
+                        <!-- Páginas -->
+                        {% set start_page = [1, page - 2] | max %}
+                        {% set end_page = [total_pages, page + 2] | min %}
+                        
+                        {% if start_page > 1 %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('asistencias.index', page=1, num_trabajador=num_trabajador_filter, checador=checador_filter, fecha_inicio=fecha_inicio_filter, fecha_fin=fecha_fin_filter) }}">1</a>
+                            </li>
+                            {% if start_page > 2 %}
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% endif %}
+                        {% endif %}
+                        
+                        {% for p in range(start_page, end_page + 1) %}
+                            <li class="page-item {% if p == page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('asistencias.index', page=p, num_trabajador=num_trabajador_filter, checador=checador_filter, fecha_inicio=fecha_inicio_filter, fecha_fin=fecha_fin_filter) }}">{{ p }}</a>
+                            </li>
+                        {% endfor %}
+                        
+                        {% if end_page < total_pages %}
+                            {% if end_page < total_pages - 1 %}
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% endif %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('asistencias.index', page=total_pages, num_trabajador=num_trabajador_filter, checador=checador_filter, fecha_inicio=fecha_inicio_filter, fecha_fin=fecha_fin_filter) }}">{{ total_pages }}</a>
+                            </li>
+                        {% endif %}
+                        
+                        <!-- Siguiente -->
+                        <li class="page-item {% if not has_next %}disabled{% endif %}">
+                            <a class="page-link" 
+                               href="{% if has_next %}{{ url_for('asistencias.index', page=page+1, num_trabajador=num_trabajador_filter, checador=checador_filter, fecha_inicio=fecha_inicio_filter, fecha_fin=fecha_fin_filter) }}{% else %}#{% endif %}">
+                                Siguiente <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                
+                <!-- Info de página -->
+                <div class="text-center text-muted mt-3">
+                    <small>
+                        Página {{ page }} de {{ total_pages }} 
+                        (mostrando {{ asistencias | length }} de {{ total | number_format }} registros)
+                    </small>
+                </div>
+                {% endif %}
+                
                 {% else %}
                 <div class="alert alert-info" role="alert">
-                    <i class="bi bi-info-circle"></i> No hay registros de asistencias.
+                    <i class="bi bi-info-circle"></i> 
+                    {% if num_trabajador_filter or checador_filter %}
+                        No se encontraron registros con los filtros aplicados.
+                    {% else %}
+                        No hay registros de asistencias.
+                    {% endif %}
                 </div>
                 {% endif %}
             </div>

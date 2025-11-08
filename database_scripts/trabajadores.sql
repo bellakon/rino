@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS trabajadores (
     tipoPlaza VARCHAR(100),
     ingresoSEPfecha DATE,
     captura DATE,
+    activo BOOLEAN DEFAULT 1,
+    movimiento VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
@@ -18,7 +20,8 @@ CREATE TABLE IF NOT EXISTS trabajadores (
     INDEX idx_num_trabajador (num_trabajador),
     INDEX idx_nombre (nombre),
     INDEX idx_departamento (departamento),
-    INDEX idx_tipoPlaza (tipoPlaza)
+    INDEX idx_tipoPlaza (tipoPlaza),
+    INDEX idx_activo (activo)
     
 ) ENGINE=InnoDB 
   DEFAULT CHARSET=utf8mb4 
