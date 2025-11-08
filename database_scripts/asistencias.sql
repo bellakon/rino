@@ -6,6 +6,7 @@
 CREATE TABLE IF NOT EXISTS asistencias (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     num_trabajador INT UNSIGNED NOT NULL,
+    nombre VARCHAR(255) DEFAULT NULL COMMENT 'Nombre del trabajador obtenido del checador',
     fecha DATE NOT NULL,
     hora TIME NOT NULL,
     checador VARCHAR(50) NOT NULL,
@@ -15,6 +16,7 @@ CREATE TABLE IF NOT EXISTS asistencias (
     INDEX idx_trabajador_fecha (num_trabajador, fecha),
     INDEX idx_fecha_hora (fecha, hora),
     INDEX idx_checador_fecha (checador, fecha),
+    INDEX idx_nombre (nombre),
     
     -- Prevenir duplicados exactos (mismo trabajador, misma fecha/hora, mismo checador)
     UNIQUE KEY uk_asistencia_unica (num_trabajador, fecha, hora, checador)
@@ -43,6 +45,6 @@ PARTITION BY RANGE (YEAR(fecha)) (
 -- ============================================
 -- Ejemplo de inserción
 -- ============================================
--- INSERT INTO asistencias (num_trabajador, fecha, hora, checador) 
--- VALUES (2, '2024-10-19', '16:45', 'CHK002')
+-- INSERT INTO asistencias (num_trabajador, nombre, fecha, hora, checador) 
+-- VALUES (2, 'JUAN PEREZ', '2024-10-19', '16:45', 'CHK002')
 -- ON DUPLICATE KEY UPDATE created_at = CURRENT_TIMESTAMP;

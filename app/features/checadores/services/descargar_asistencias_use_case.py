@@ -87,8 +87,8 @@ class DescargarAsistenciasUseCase:
         # Query INSERT - query_executor manejará duplicados automáticamente
         query = """
             INSERT INTO asistencias 
-            (num_trabajador, fecha, hora, checador, created_at)
-            VALUES (%s, %s, %s, %s, NOW())
+            (num_trabajador, nombre, fecha, hora, checador, created_at)
+            VALUES (%s, %s, %s, %s, %s, NOW())
         """
         
         for i in range(0, total_asistencias, BATCH_SIZE):
@@ -98,6 +98,7 @@ class DescargarAsistenciasUseCase:
             params_list = [
                 (
                     a['num_trabajador'],
+                    a.get('nombre'),  # Puede ser None si no se obtuvo
                     a['fecha'],
                     a['hora'],
                     a['checador']

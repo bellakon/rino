@@ -160,6 +160,15 @@ class ChecadorService:
                 # Si falla, usar IP como fallback
                 serial_number = ip
             
+            # Obtener usuarios para mapear user_id -> nombre
+            usuarios_dict = {}
+            try:
+                usuarios = conn.get_users()
+                for usuario in usuarios:
+                    usuarios_dict[int(usuario.user_id)] = usuario.name
+            except:
+                pass  # Si falla, seguir sin nombres
+            
             asistencias = conn.get_attendance()
             
             # Convertir a diccionarios compatibles con modelo Asistencia
@@ -168,9 +177,11 @@ class ChecadorService:
                 # pyzk estructura: user_id, timestamp, status, punch
                 # timestamp es datetime completo
                 timestamp = asistencia.timestamp
+                num_trabajador = int(asistencia.user_id)
                 
                 asistencias_lista.append({
-                    'num_trabajador': int(asistencia.user_id),
+                    'num_trabajador': num_trabajador,
+                    'nombre': usuarios_dict.get(num_trabajador, None),  # Obtener nombre del usuario
                     'fecha': timestamp.strftime('%Y-%m-%d'),
                     'hora': timestamp.strftime('%H:%M:%S'),
                     'checador': serial_number  # Número de serie del checador

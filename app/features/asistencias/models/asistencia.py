@@ -15,6 +15,7 @@ class Asistencia:
     fecha: str  # YYYY-MM-DD
     hora: str   # HH:MM:SS
     checador: str
+    nombre: Optional[str] = None  # Nombre del trabajador del checador
     id: Optional[int] = None
     
     def to_dict(self):
@@ -24,7 +25,8 @@ class Asistencia:
             'num_trabajador': self.num_trabajador,
             'fecha': self.fecha,
             'hora': self.hora,
-            'checador': self.checador
+            'checador': self.checador,
+            'nombre': self.nombre
         }
     
     @classmethod
@@ -35,5 +37,6 @@ class Asistencia:
             num_trabajador=data.get('num_trabajador'),
             fecha=data.get('fecha'),
             hora=data.get('hora'),
-            checador=data.get('checador')
+            checador=data.get('checador'),
+            nombre=data.get('nombre')
         )

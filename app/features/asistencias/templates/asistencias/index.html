@@ -86,6 +86,7 @@
                             <tr>
                                 <th>ID</th>
                                 <th>Num. Trabajador</th>
+                                <th>Nombre</th>
                                 <th>Fecha</th>
                                 <th>Hora</th>
                                 <th>Checador</th>
@@ -96,6 +97,7 @@
                             <tr>
                                 <td>{{ asistencia.id or '-' }}</td>
                                 <td><strong>{{ asistencia.num_trabajador }}</strong></td>
+                                <td>{{ asistencia.nombre or '-' }}</td>
                                 <td>{{ asistencia.fecha }}</td>
                                 <td>{{ asistencia.hora }}</td>
                                 <td><code>{{ asistencia.checador }}</code></td>
