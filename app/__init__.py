@@ -1,0 +1,41 @@
+"""
+Inicialización de la aplicación Flask con arquitectura por features
+"""
+from flask import Flask, render_template
+from app.config.app_config import Config
+import os
+
+
+def create_app():
+    """Factory para crear la aplicación Flask"""
+    
+    # Crear app con template folder en shared
+    app = Flask(__name__, template_folder='shared/templates')
+    app.config.from_object(Config)
+    app.secret_key = Config.SECRET_KEY
+    
+    # Registrar template folders adicionales por feature (rutas absolutas)
+    import jinja2
+    base_dir = os.path.abspath(os.path.dirname(__file__))
+    loader = jinja2.ChoiceLoader([
+        app.jinja_loader,
+        jinja2.FileSystemLoader([
+            os.path.join(base_dir, 'features/checadores/templates'),
+            os.path.join(base_dir, 'features/asistencias/templates'),
+        ])
+    ])
+    app.jinja_loader = loader
+    
+    # Registrar blueprints de features
+    from app.features.checadores.routes.checador_routes import checadores_bp
+    from app.features.asistencias.routes.asistencia_routes import asistencias_bp
+    
+    app.register_blueprint(checadores_bp)
+    app.register_blueprint(asistencias_bp)
+    
+    # Ruta principal
+    @app.route('/')
+    def home():
+        return render_template('index.html')
+    
+    return app

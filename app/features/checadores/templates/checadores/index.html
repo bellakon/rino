@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}Checadores{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="bi bi-fingerprint"></i> Gestión de Checadores
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Checadores Registrados</h5>
+            </div>
+            <div class="card-body">
+                {% if checadores %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>IP</th>
+                                <th>Puerto</th>
+                                <th>Ubicación</th>
+                                <th>Estado</th>
+                                <th class="text-center">Opciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for checador in checadores %}
+                            <tr>
+                                <td><code>{{ checador.id }}</code></td>
+                                <td><strong>{{ checador.nombre }}</strong></td>
+                                <td><code>{{ checador.ip }}</code></td>
+                                <td>{{ checador.puerto }}</td>
+                                <td>{{ checador.ubicacion }}</td>
+                                <td>
+                                    {% if checador.activo %}
+                                        <span class="badge bg-success">Activo</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactivo</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <button 
+                                        class="btn btn-sm btn-info" 
+                                        onclick="verificarConexion('{{ checador.id }}')"
+                                        title="Verificar conexión">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button 
+                                        class="btn btn-sm btn-primary ms-1" 
+                                        onclick="verTrabajadores('{{ checador.id }}')"
+                                        title="Ver trabajadores registrados">
+                                        <i class="bi bi-people"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle"></i> No hay checadores registrados.
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('home') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver al Inicio
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de detalles del checador -->
+{% include 'checadores/modal_detalles.html' %}
+
+<!-- Modal de trabajadores -->
+{% include 'checadores/modal_trabajadores.html' %}
+
+<script>
+function verificarConexion(checadorId) {
+    // Mostrar loading
+    const modalElement = document.getElementById('modalDetalles');
+    const modal = new bootstrap.Modal(modalElement);
+    
+    // Limpiar contenido anterior
+    document.getElementById('modalContenido').innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Verificando...</span>
+            </div>
+            <p class="mt-2">Verificando conexión...</p>
+        </div>
+    `;
+    
+    modal.show();
+    
+    // Hacer petición AJAX
+    fetch(`{{ url_for('checadores.verificar_conexion') }}?checador_id=${checadorId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('modalContenido').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-x-circle"></i> ${data.error}
+                    </div>
+                `;
+            } else {
+                mostrarDetalles(data);
+            }
+        })
+        .catch(error => {
+            document.getElementById('modalContenido').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-x-circle"></i> Error al verificar conexión
+                </div>
+            `;
+        });
+}
+
+function mostrarDetalles(data) {
+    const estadoHtml = data.conectado 
+        ? '<span class="badge bg-success fs-6"><i class="bi bi-check-circle"></i> Conectado</span>'
+        : '<span class="badge bg-danger fs-6"><i class="bi bi-x-circle"></i> No disponible</span>';
+    
+    const errorHtml = data.error_mensaje 
+        ? `<div class="alert alert-warning mt-3">
+             <strong>Error:</strong> ${data.error_mensaje}
+           </div>`
+        : '';
+    
+    let infoDispositivoHtml = '';
+    if (data.info_dispositivo) {
+        const info = data.info_dispositivo;
+        infoDispositivoHtml = `
+            <hr>
+            <h5 class="mb-3"><i class="bi bi-info-circle"></i> Información del Dispositivo</h5>
+            <div class="row">
+                ${info.serial_number ? `
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Número de Serie:</label>
+                    <p class="form-control-plaintext"><code>${info.serial_number}</code></p>
+                </div>` : ''}
+                ${info.platform ? `
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Plataforma:</label>
+                    <p class="form-control-plaintext">${info.platform}</p>
+                </div>` : ''}
+                ${info.firmware_version ? `
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Versión Firmware:</label>
+                    <p class="form-control-plaintext">${info.firmware_version}</p>
+                </div>` : ''}
+                ${info.device_name ? `
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Nombre Dispositivo:</label>
+                    <p class="form-control-plaintext">${info.device_name}</p>
+                </div>` : ''}
+                ${info.mac_address ? `
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">MAC Address:</label>
+                    <p class="form-control-plaintext"><code>${info.mac_address}</code></p>
+                </div>` : ''}
+                ${info.vendor ? `
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Fabricante:</label>
+                    <p class="form-control-plaintext">${info.vendor}</p>
+                </div>` : ''}
+                ${info.product_code ? `
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Código Producto:</label>
+                    <p class="form-control-plaintext">${info.product_code}</p>
+                </div>` : ''}
+                ${info.work_code ? `
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Work Code:</label>
+                    <p class="form-control-plaintext">${info.work_code}</p>
+                </div>` : ''}
+                ${info.fp_version ? `
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Versión Huella:</label>
+                    <p class="form-control-plaintext">${info.fp_version}</p>
+                </div>` : ''}
+                ${info.face_version ? `
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Versión Facial:</label>
+                    <p class="form-control-plaintext">${info.face_version}</p>
+                </div>` : ''}
+                ${info.pin_width ? `
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">PIN Width:</label>
+                    <p class="form-control-plaintext">${info.pin_width}</p>
+                </div>` : ''}
+            </div>
+        `;
+    }
+    
+    document.getElementById('modalContenido').innerHTML = `
+        <div class="row mb-3">
+            <div class="col-12">
+                <h5>Estado de Conexión</h5>
+                ${estadoHtml}
+            </div>
+        </div>
+        
+        <hr>
+        
+        <h5 class="mb-3"><i class="bi bi-gear"></i> Configuración</h5>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">ID:</label>
+                <p class="form-control-plaintext"><code>${data.checador.id}</code></p>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Nombre:</label>
+                <p class="form-control-plaintext">${data.checador.nombre}</p>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">IP:</label>
+                <p class="form-control-plaintext"><code>${data.checador.ip}</code></p>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Puerto:</label>
+                <p class="form-control-plaintext">${data.checador.puerto}</p>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Ubicación:</label>
+                <p class="form-control-plaintext">${data.checador.ubicacion}</p>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">Estado:</label>
+                <p class="form-control-plaintext">
+                    ${data.checador.activo 
+                        ? '<span class="badge bg-success">Activo</span>' 
+                        : '<span class="badge bg-secondary">Inactivo</span>'}
+                </p>
+            </div>
+        </div>
+        
+        ${infoDispositivoHtml}
+        ${errorHtml}
+    `;
+}
+
+function verTrabajadores(checadorId) {
+    // Mostrar loading
+    const modalElement = document.getElementById('modalTrabajadores');
+    const modal = new bootstrap.Modal(modalElement);
+    
+    document.getElementById('modalTrabajadoresContenido').innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Obteniendo trabajadores del checador...</p>
+        </div>
+    `;
+    
+    modal.show();
+    
+    // Hacer petición AJAX
+    fetch(`{{ url_for('checadores.consultar_trabajadores') }}?checador_id=${checadorId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('modalTrabajadoresContenido').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-x-circle"></i> ${data.error}
+                    </div>
+                `;
+            } else {
+                mostrarTrabajadores(data);
+            }
+        })
+        .catch(error => {
+            document.getElementById('modalTrabajadoresContenido').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-x-circle"></i> Error al obtener trabajadores
+                </div>
+            `;
+        });
+}
+
+function mostrarTrabajadores(data) {
+    const checador = data.checador;
+    const trabajadores = data.trabajadores;
+    
+    let tablaHtml = '';
+    if (trabajadores && trabajadores.length > 0) {
+        tablaHtml = `
+            <div class="mb-3">
+                <h6><i class="bi bi-gear"></i> Checador: ${checador.nombre} (${checador.ip})</h6>
+                <p class="text-muted">Total: ${trabajadores.length} trabajadores registrados</p>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Num. Trabajador</th>
+                            <th>Nombre</th>
+                            <th>Departamento</th>
+                            <th>Tipo Plaza</th>
+                            <th>Ingreso SEP</th>
+                            <th>Captura</th>
+                            <th>Privilegio</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        trabajadores.forEach(t => {
+            const estadoBadge = t.en_bd 
+                ? '<span class="badge bg-success">En BD</span>'
+                : '<span class="badge bg-warning">Solo en Checador</span>';
+            
+            tablaHtml += `
+                <tr>
+                    <td><strong>${t.num_trabajador}</strong></td>
+                    <td>${t.nombre || '-'}</td>
+                    <td>${t.departamento || '-'}</td>
+                    <td>${t.tipoPlaza || '-'}</td>
+                    <td>${t.ingresoSEPfecha || '-'}</td>
+                    <td>${t.captura || '-'}</td>
+                    <td>${t.privilege}</td>
+                    <td>${estadoBadge}</td>
+                </tr>
+            `;
+        });
+        
+        tablaHtml += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } else {
+        tablaHtml = `
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No hay trabajadores registrados en este checador.
+            </div>
+        `;
+    }
+    
+    document.getElementById('modalTrabajadoresContenido').innerHTML = tablaHtml;
+}
+</script>
+{% endblock %}
