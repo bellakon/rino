@@ -1,0 +1,199 @@
+<!-- Modal: Editar Asignación -->
+<div class="modal fade" id="modalEditarAsignacion" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil"></i> Editar Asignación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info mb-3">
+                    <strong>Trabajador:</strong> <span id="editar_asig_trabajador"></span><br>
+                    <strong>Horario:</strong> <span id="editar_asig_horario"></span>
+                </div>
+
+                <form id="formEditarAsignacion">
+                    <input type="hidden" id="editar_asig_id">
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Fecha Inicio *</label>
+                            <input type="date" class="form-control" id="editar_asig_fecha_inicio" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Fecha Fin *</label>
+                            <input type="date" class="form-control" id="editar_asig_fecha_fin" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 mt-3">
+                        <label class="form-label">Semestre *</label>
+                        <select class="form-select" id="editar_asig_semestre" required>
+                            <option value="">Seleccionar...</option>
+                            {% for semestre in semestres %}
+                            <option value="{{ semestre }}">{{ semestre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Estado</label>
+                        <select class="form-select" id="editar_asig_estado">
+                            <option value="activo">Activo</option>
+                            <option value="finalizado">Finalizado</option>
+                            <option value="suspendido">Suspendido</option>
+                        </select>
+                    </div>
+                </form>
+
+                <div id="resultadoEditarAsignacion" class="mt-3" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" onclick="guardarEdicionAsignacion()">
+                    <i class="bi bi-check-circle"></i> Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function abrirModalEditarAsignacion(id) {
+    console.log(`[EDITAR ASIGNACION] ID: ${id}`);
+    
+    // Limpiar formulario y resultado
+    document.getElementById('formEditarAsignacion').reset();
+    document.getElementById('resultadoEditarAsignacion').style.display = 'none';
+    
+    // Mostrar loading
+    document.getElementById('editar_asig_trabajador').textContent = 'Cargando...';
+    document.getElementById('editar_asig_horario').textContent = '';
+    
+    // Cargar datos de la asignación
+    fetch(`/horarios/asignaciones/obtener/${id}`)
+        .then(r => r.json())
+        .then(data => {
+            console.log('[EDITAR ASIGNACION] Datos cargados:', data);
+            
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            // Llenar formulario
+            document.getElementById('editar_asig_id').value = data.id;
+            document.getElementById('editar_asig_trabajador').textContent = 
+                `${data.num_trabajador} - ${data.nombre_completo}`;
+            document.getElementById('editar_asig_horario').textContent = data.nombre_horario;
+            document.getElementById('editar_asig_fecha_inicio').value = data.fecha_inicio_asignacion;
+            document.getElementById('editar_asig_fecha_fin').value = data.fecha_fin_asignacion || '';
+            document.getElementById('editar_asig_semestre').value = data.semestre;
+            document.getElementById('editar_asig_estado').value = data.estado_asignacion;
+            
+            // Abrir modal
+            const modal = new bootstrap.Modal(document.getElementById('modalEditarAsignacion'));
+            modal.show();
+        })
+        .catch(err => {
+            console.error('[EDITAR ASIGNACION] Error:', err);
+            alert('Error al cargar la asignación: ' + err.message);
+        });
+}
+
+function guardarEdicionAsignacion() {
+    const form = document.getElementById('formEditarAsignacion');
+    
+    // Validar formulario
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const id = document.getElementById('editar_asig_id').value;
+    const fechaInicio = document.getElementById('editar_asig_fecha_inicio').value;
+    const fechaFin = document.getElementById('editar_asig_fecha_fin').value;
+    
+    // Validar fechas
+    if (!fechaInicio) {
+        alert('La fecha de inicio es obligatoria');
+        return;
+    }
+    
+    if (!fechaFin) {
+        alert('La fecha fin es obligatoria');
+        return;
+    }
+    
+    if (fechaFin < fechaInicio) {
+        alert('La fecha fin no puede ser anterior a la fecha de inicio');
+        return;
+    }
+    
+    const datos = {
+        fecha_inicio_asignacion: fechaInicio,
+        fecha_fin_asignacion: fechaFin,
+        semestre: document.getElementById('editar_asig_semestre').value,
+        estado_asignacion: document.getElementById('editar_asig_estado').value
+    };
+    
+    console.log('[EDITAR ASIGNACION] Datos a enviar:', datos);
+    
+    // Mostrar loading
+    const resultadoDiv = document.getElementById('resultadoEditarAsignacion');
+    resultadoDiv.style.display = 'block';
+    resultadoDiv.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-warning" role="status">
+                <span class="visually-hidden">Guardando...</span>
+            </div>
+            <p class="mt-2">Actualizando asignación...</p>
+        </div>
+    `;
+    
+    fetch(`/horarios/asignaciones/editar/${id}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(datos)
+    })
+    .then(r => r.json())
+    .then(data => {
+        console.log('[EDITAR ASIGNACION] Respuesta:', data);
+        
+        if (data.error) {
+            resultadoDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <strong><i class="bi bi-exclamation-triangle"></i> Error:</strong><br>
+                    ${data.error.replace(/\n/g, '<br>')}
+                </div>
+            `;
+        } else {
+            resultadoDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <strong><i class="bi bi-check-circle"></i> ¡Éxito!</strong><br>
+                    ${data.mensaje}
+                </div>
+            `;
+            
+            // Recargar tabla después de 1.5 segundos
+            setTimeout(() => {
+                cargarAsignaciones();
+                bootstrap.Modal.getInstance(document.getElementById('modalEditarAsignacion')).hide();
+            }, 1500);
+        }
+    })
+    .catch(err => {
+        console.error('[EDITAR ASIGNACION] Error:', err);
+        resultadoDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <strong><i class="bi bi-exclamation-triangle"></i> Error:</strong><br>
+                ${err.message}
+            </div>
+        `;
+    });
+}
+</script>

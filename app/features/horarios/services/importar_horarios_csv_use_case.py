@@ -63,6 +63,10 @@ class ImportarHorariosCSVUseCase:
                         resultados['errores'].append(f"Trabajador {num_trabajador}: fecha_inicio_asignacion es requerida")
                         continue
                     
+                    if not row.get('fecha_fin_asignacion'):
+                        resultados['errores'].append(f"Trabajador {num_trabajador}: fecha_fin_asignacion es requerida")
+                        continue
+                    
                     if not row.get('semestre'):
                         resultados['errores'].append(f"Trabajador {num_trabajador}: semestre es requerido")
                         continue
@@ -121,7 +125,7 @@ class ImportarHorariosCSVUseCase:
                         num_trabajador=num_trabajador,
                         plantilla_horario_id=id_plantilla,
                         fecha_inicio_asignacion=row.get('fecha_inicio_asignacion'),
-                        fecha_fin_asignacion=row.get('fecha_fin_asignacion') if row.get('fecha_fin_asignacion') else None,
+                        fecha_fin_asignacion=row.get('fecha_fin_asignacion'),  # Ya validamos que existe
                         semestre=row.get('semestre'),
                         estado_asignacion='activo',
                         activo_asignacion=True

@@ -3,7 +3,6 @@ Caso de uso: Listar Horarios de Trabajadores
 Responsabilidad: Obtener asignaciones con información completa
 """
 from app.core.database.query_executor import QueryExecutor
-from app.core.database.query_builder import QueryBuilder
 from app.core.database.connection import db_connection
 
 
@@ -26,7 +25,10 @@ class ListarHorariosTrabajadoresUseCase:
             tuple: (lista_horarios, error)
         """
         try:
-            builder = QueryBuilder("""
+            print(f"[LISTAR ASIGNACIONES] Filtros: semestre={semestre}, num_trabajador={num_trabajador}, estado={estado_asignacion}")
+            
+            # Query base
+            query = """
                 SELECT 
                     ht.id,
                     ht.num_trabajador,
@@ -44,28 +46,53 @@ class ListarHorariosTrabajadoresUseCase:
                 INNER JOIN trabajadores t ON ht.num_trabajador = t.num_trabajador
                 LEFT JOIN departamentos d ON t.departamento_id = d.id
                 INNER JOIN plantillas_horarios ph ON ht.plantilla_horario_id = ph.id
-            """)
+            """
+            
+            where_clauses = []
+            params = []
             
             if semestre:
-                builder.add_filter('ht.semestre', semestre)
+                where_clauses.append("ht.semestre = %s")
+                params.append(semestre)
             
             if num_trabajador:
-                builder.add_filter('ht.num_trabajador', num_trabajador)
+                where_clauses.append("ht.num_trabajador = %s")
+                params.append(num_trabajador)
             
             if estado_asignacion:
-                builder.add_filter('ht.estado_asignacion', estado_asignacion)
+                where_clauses.append("ht.estado_asignacion = %s")
+                params.append(estado_asignacion)
             
-            builder.add_order_by('t.nombre')
+            if where_clauses:
+                query += " WHERE " + " AND ".join(where_clauses)
             
-            query, params = builder.build()
-            resultado, error = self.query_executor.ejecutar(query, params)
+            query += " ORDER BY t.nombre"
+            
+            print(f"[LISTAR ASIGNACIONES] Query: {query}")
+            print(f"[LISTAR ASIGNACIONES] Params: {params}")
+            
+            resultado, error = self.query_executor.ejecutar(query, tuple(params) if params else None)
             
             if error:
+                print(f"[LISTAR ASIGNACIONES] Error: {error}")
                 return [], error
+            
+            print(f"[LISTAR ASIGNACIONES] Encontrados: {len(resultado) if resultado else 0} registros")
+            if resultado:
+                print(f"[LISTAR ASIGNACIONES] Primer registro: {resultado[0]}")
             
             return resultado if resultado else [], None
             
         except Exception as e:
+            print(f"[LISTAR ASIGNACIONES] Exception: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return [], f"Error al listar horarios de trabajadores: {str(e)}"
+            
+            return resultado if resultado else [], None
+            
+        except Exception as e:
+            print(f"[LISTAR ASIGNACIONES] Exception: {str(e)}")
             return [], f"Error al listar horarios de trabajadores: {str(e)}"
 
 

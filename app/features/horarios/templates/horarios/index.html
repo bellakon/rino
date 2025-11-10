@@ -142,11 +142,12 @@
                                 <th>Periodo</th>
                                 <th>Semestre</th>
                                 <th>Estado</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="tablaAsignaciones">
                             <tr>
-                                <td colspan="7" class="text-center">Selecciona filtros y presiona Buscar</td>
+                                <td colspan="8" class="text-center">Selecciona filtros y presiona Buscar</td>
                             </tr>
                         </tbody>
                     </table>
@@ -161,12 +162,19 @@
 {% include 'horarios/modal_editar_plantilla.html' %}
 {% include 'horarios/modal_asignar_horario.html' %}
 {% include 'horarios/modal_asignar_desde_plantilla.html' %}
+{% include 'horarios/modal_editar_asignacion.html' %}
 {% include 'horarios/modal_importar_csv.html' %}
 
 <script>
 // Cargar plantillas al iniciar
 document.addEventListener('DOMContentLoaded', () => {
     cargarPlantillas();
+});
+
+// Detectar cuando se abre el tab de asignaciones
+document.getElementById('asignaciones-tab').addEventListener('shown.bs.tab', () => {
+    console.log('[TAB ASIGNACIONES] Tab abierto, cargando asignaciones...');
+    cargarAsignaciones();
 });
 
 // Función: Cargar plantillas
@@ -227,23 +235,30 @@ function cargarAsignaciones() {
     const semestre = document.getElementById('filtroSemestre').value;
     const estado = document.getElementById('filtroEstadoAsignacion').value;
     
+    console.log('[CARGAR ASIGNACIONES] Filtros:', { semestre, estado });
+    
     const params = new URLSearchParams();
     if (semestre) params.append('semestre', semestre);
     if (estado) params.append('estado', estado);
     
+    console.log('[CARGAR ASIGNACIONES] URL:', `/horarios/asignaciones/listar?${params.toString()}`);
+    
     fetch(`/horarios/asignaciones/listar?${params.toString()}`)
         .then(r => r.json())
         .then(data => {
+            console.log('[CARGAR ASIGNACIONES] Respuesta:', data);
             const tbody = document.getElementById('tablaAsignaciones');
             if (data.error) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-danger">${data.error}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="text-danger">${data.error}</td></tr>`;
                 return;
             }
             
             if (data.horarios.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No se encontraron asignaciones</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">No se encontraron asignaciones</td></tr>';
                 return;
             }
+            
+            console.log(`[CARGAR ASIGNACIONES] ${data.horarios.length} asignaciones encontradas`);
             
             tbody.innerHTML = data.horarios.map(h => `
                 <tr>
@@ -258,13 +273,38 @@ function cargarAsignaciones() {
                             ${h.estado_asignacion}
                         </span>
                     </td>
+                    <td>
+                        <button class="btn btn-sm btn-warning me-1" onclick="abrirModalEditarAsignacion(${h.id})" title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="eliminarAsignacion(${h.id})" title="Eliminar">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
                 </tr>
             `).join('');
         })
         .catch(err => {
             document.getElementById('tablaAsignaciones').innerHTML = 
-                `<tr><td colspan="7" class="text-danger">Error: ${err.message}</td></tr>`;
+                `<tr><td colspan="8" class="text-danger">Error: ${err.message}</td></tr>`;
         });
+}
+
+// Función: Eliminar asignación
+function eliminarAsignacion(id) {
+    if (!confirm('¿Eliminar esta asignación? El trabajador dejará de tener este horario asignado.')) return;
+    
+    fetch(`/horarios/asignaciones/eliminar/${id}`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+            } else {
+                alert(data.mensaje);
+                cargarAsignaciones();
+            }
+        })
+        .catch(err => alert('Error: ' + err.message));
 }
 
 // Función: Eliminar plantilla

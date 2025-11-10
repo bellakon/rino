@@ -12,6 +12,9 @@ from app.features.horarios.services.editar_plantilla_horario_use_case import edi
 from app.features.horarios.services.obtener_plantilla_horario_use_case import obtener_plantilla_horario_use_case
 from app.features.horarios.services.asignar_horario_trabajador_use_case import asignar_horario_trabajador_use_case
 from app.features.horarios.services.listar_horarios_trabajadores_use_case import listar_horarios_trabajadores_use_case
+from app.features.horarios.services.obtener_asignacion_use_case import obtener_asignacion_use_case
+from app.features.horarios.services.editar_asignacion_use_case import editar_asignacion_use_case
+from app.features.horarios.services.eliminar_asignacion_use_case import eliminar_asignacion_use_case
 from app.features.horarios.services.importar_horarios_csv_use_case import importar_horarios_csv_use_case
 from app.features.horarios.models.plantilla_horario import PlantillaHorario
 from app.features.horarios.models.horario_trabajador import HorarioTrabajador
@@ -235,6 +238,57 @@ def crear_asignacion():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@horarios_bp.route('/asignaciones/obtener/<int:id>')
+def obtener_asignacion(id):
+    """Obtiene una asignación por ID"""
+    asignacion, error = obtener_asignacion_use_case.ejecutar(id)
+    
+    if error:
+        return jsonify({'error': error}), 404
+    
+    return jsonify(asignacion)
+
+
+@horarios_bp.route('/asignaciones/editar/<int:id>', methods=['POST'])
+def editar_asignacion(id):
+    """Edita una asignación de horario"""
+    try:
+        data = request.get_json()
+        
+        success, error = editar_asignacion_use_case.ejecutar(
+            id_asignacion=id,
+            fecha_inicio=data['fecha_inicio_asignacion'],
+            fecha_fin=data['fecha_fin_asignacion'],
+            semestre=data['semestre'],
+            estado=data.get('estado_asignacion', 'activo')
+        )
+        
+        if error:
+            return jsonify({'error': error}), 400
+        
+        return jsonify({
+            'success': True,
+            'mensaje': 'Asignación actualizada exitosamente'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@horarios_bp.route('/asignaciones/eliminar/<int:id>', methods=['POST'])
+def eliminar_asignacion(id):
+    """Elimina una asignación de horario"""
+    success, error = eliminar_asignacion_use_case.ejecutar(id)
+    
+    if error:
+        return jsonify({'error': error}), 400
+    
+    return jsonify({
+        'success': True,
+        'mensaje': 'Asignación eliminada exitosamente'
+    })
 
 
 @horarios_bp.route('/importar', methods=['POST'])
