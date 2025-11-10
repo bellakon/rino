@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}Horarios{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="bi bi-calendar-week"></i> Gestión de Horarios
+        </h1>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="plantillas-tab" data-bs-toggle="tab" data-bs-target="#plantillas" type="button" role="tab">
+            <i class="bi bi-clock"></i> Plantillas de Horarios
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="asignaciones-tab" data-bs-toggle="tab" data-bs-target="#asignaciones" type="button" role="tab">
+            <i class="bi bi-person-check"></i> Asignaciones
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content">
+    <!-- Tab: Plantillas -->
+    <div class="tab-pane fade show active" id="plantillas" role="tabpanel">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-clock"></i> Plantillas de Horarios</h5>
+                    <div>
+                        <button type="button" class="btn btn-light btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalCrearPlantilla">
+                            <i class="bi bi-plus-circle"></i> Nueva Plantilla
+                        </button>
+                        <button type="button" class="btn btn-light btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalImportarCSV">
+                            <i class="bi bi-upload"></i> Importar CSV
+                        </button>
+                        <a href="{{ url_for('horarios.descargar_plantilla_csv') }}" class="btn btn-light btn-sm">
+                            <i class="bi bi-download"></i> Descargar Plantilla
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Filtros Plantillas -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" id="buscarPlantilla" placeholder="Buscar por nombre o descripción...">
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="filtroActivoPlantilla">
+                            <option value="">Todos los estados</option>
+                            <option value="true">Activos</option>
+                            <option value="false">Inactivos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-primary w-100" onclick="cargarPlantillas()">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabla Plantillas -->
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaPlantillas">
+                            <tr>
+                                <td colspan="5" class="text-center">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Cargando...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: Asignaciones -->
+    <div class="tab-pane fade" id="asignaciones" role="tabpanel">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-person-check"></i> Asignaciones de Horarios</h5>
+                    <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalAsignarHorario">
+                        <i class="bi bi-plus-circle"></i> Nueva Asignación
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Filtros Asignaciones -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <select class="form-select" id="filtroSemestre">
+                            <option value="">Todos los semestres</option>
+                            {% for semestre in semestres %}
+                            <option value="{{ semestre }}">{{ semestre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select" id="filtroEstadoAsignacion">
+                            <option value="">Todos los estados</option>
+                            <option value="activo">Activo</option>
+                            <option value="finalizado">Finalizado</option>
+                            <option value="suspendido">Suspendido</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-success w-100" onclick="cargarAsignaciones()">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabla Asignaciones -->
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Trabajador</th>
+                                <th>Departamento</th>
+                                <th>Horario</th>
+                                <th>Periodo</th>
+                                <th>Semestre</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaAsignaciones">
+                            <tr>
+                                <td colspan="7" class="text-center">Selecciona filtros y presiona Buscar</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modales -->
+{% include 'horarios/modal_crear_plantilla.html' %}
+{% include 'horarios/modal_editar_plantilla.html' %}
+{% include 'horarios/modal_asignar_horario.html' %}
+{% include 'horarios/modal_asignar_desde_plantilla.html' %}
+{% include 'horarios/modal_importar_csv.html' %}
+
+<script>
+// Cargar plantillas al iniciar
+document.addEventListener('DOMContentLoaded', () => {
+    cargarPlantillas();
+});
+
+// Función: Cargar plantillas
+function cargarPlantillas() {
+    const buscar = document.getElementById('buscarPlantilla').value;
+    const activo = document.getElementById('filtroActivoPlantilla').value;
+    
+    const params = new URLSearchParams();
+    if (buscar) params.append('buscar', buscar);
+    if (activo) params.append('activo', activo);
+    
+    fetch(`/horarios/plantillas/listar?${params.toString()}`)
+        .then(r => r.json())
+        .then(data => {
+            const tbody = document.getElementById('tablaPlantillas');
+            if (data.error) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-danger">${data.error}</td></tr>`;
+                return;
+            }
+            
+            if (data.plantillas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No se encontraron plantillas</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = data.plantillas.map(p => `
+                <tr>
+                    <td>${p.id}</td>
+                    <td>${p.nombre_horario}</td>
+                    <td>${p.descripcion_horario || '-'}</td>
+                    <td>
+                        <span class="badge bg-${p.activo ? 'success' : 'secondary'}">
+                            ${p.activo ? 'Activo' : 'Inactivo'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-success me-1" onclick="abrirModalAsignarDesde(${p.id}, '${p.nombre_horario.replace(/'/g, "\\'")}');" title="Asignar a trabajador">
+                            <i class="bi bi-person-check"></i>
+                        </button>
+                        <button class="btn btn-sm btn-warning me-1" onclick="abrirModalEditar(${p.id})" title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="eliminarPlantilla(${p.id})" title="Eliminar">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        })
+        .catch(err => {
+            document.getElementById('tablaPlantillas').innerHTML = 
+                `<tr><td colspan="5" class="text-danger">Error: ${err.message}</td></tr>`;
+        });
+}
+
+// Función: Cargar asignaciones
+function cargarAsignaciones() {
+    const semestre = document.getElementById('filtroSemestre').value;
+    const estado = document.getElementById('filtroEstadoAsignacion').value;
+    
+    const params = new URLSearchParams();
+    if (semestre) params.append('semestre', semestre);
+    if (estado) params.append('estado', estado);
+    
+    fetch(`/horarios/asignaciones/listar?${params.toString()}`)
+        .then(r => r.json())
+        .then(data => {
+            const tbody = document.getElementById('tablaAsignaciones');
+            if (data.error) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-danger">${data.error}</td></tr>`;
+                return;
+            }
+            
+            if (data.horarios.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No se encontraron asignaciones</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = data.horarios.map(h => `
+                <tr>
+                    <td>${h.id}</td>
+                    <td>${h.nombre_completo || 'N/A'}</td>
+                    <td>${h.departamento_nombre || 'Sin departamento'}</td>
+                    <td>${h.nombre_horario || 'N/A'}</td>
+                    <td>${h.fecha_inicio_asignacion} - ${h.fecha_fin_asignacion || 'Indefinido'}</td>
+                    <td>${h.semestre}</td>
+                    <td>
+                        <span class="badge bg-${h.estado_asignacion === 'activo' ? 'success' : 'secondary'}">
+                            ${h.estado_asignacion}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        })
+        .catch(err => {
+            document.getElementById('tablaAsignaciones').innerHTML = 
+                `<tr><td colspan="7" class="text-danger">Error: ${err.message}</td></tr>`;
+        });
+}
+
+// Función: Eliminar plantilla
+function eliminarPlantilla(id) {
+    if (!confirm('¿Eliminar esta plantilla? Esta acción no se puede deshacer.')) return;
+    
+    fetch(`/horarios/plantillas/eliminar/${id}`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+            } else {
+                alert(data.mensaje);
+                cargarPlantillas();
+            }
+        })
+        .catch(err => alert('Error: ' + err.message));
+}
+</script>
+{% endblock %}

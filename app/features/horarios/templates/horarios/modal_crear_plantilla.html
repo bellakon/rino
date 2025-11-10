@@ -1,0 +1,124 @@
+<!-- Modal: Crear Plantilla de Horario -->
+<div class="modal fade" id="modalCrearPlantilla" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Nueva Plantilla de Horario</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formCrearPlantilla">
+                    <!-- Información General -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nombre del Horario *</label>
+                            <input type="text" class="form-control" id="crear_nombre_horario" name="nombre_horario" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Descripción</label>
+                            <input type="text" class="form-control" id="crear_descripcion_horario" name="descripcion_horario">
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Campos de horarios compartidos -->
+                    {% set prefix = 'crear' %}
+                    {% include 'horarios/form_horarios_dias.html' %}
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarPlantilla()">
+                    <i class="bi bi-save"></i> Guardar Plantilla
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function guardarPlantilla() {
+    const form = document.getElementById('formCrearPlantilla');
+    const nombre = document.getElementById('crear_nombre_horario').value.trim();
+    
+    // Validar nombre requerido
+    if (!nombre) {
+        alert('El nombre del horario es requerido');
+        return;
+    }
+    
+    // Construir objeto con todos los campos
+    const data = {
+        nombre_horario: nombre,
+        descripcion_horario: document.getElementById('crear_descripcion_horario').value.trim(),
+        activo: true
+    };
+    
+    // Agregar todos los campos de horarios y validar que estén completos
+    const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+    const diasNombres = {
+        'lunes': 'Lunes',
+        'martes': 'Martes', 
+        'miercoles': 'Miércoles',
+        'jueves': 'Jueves',
+        'viernes': 'Viernes',
+        'sabado': 'Sábado',
+        'domingo': 'Domingo'
+    };
+    
+    let errores = [];
+    
+    dias.forEach(dia => {
+        for (let turno = 1; turno <= 2; turno++) {
+            const entrada = document.getElementById(`crear_${dia}_entrada_${turno}`);
+            const salida = document.getElementById(`crear_${dia}_salida_${turno}`);
+            
+            const valorEntrada = entrada ? entrada.value : '';
+            const valorSalida = salida ? salida.value : '';
+            
+            // Validar que si uno tiene valor, el otro también
+            if (valorEntrada && !valorSalida) {
+                errores.push(`${diasNombres[dia]} - Turno ${turno}: Falta hora de SALIDA`);
+            }
+            if (valorSalida && !valorEntrada) {
+                errores.push(`${diasNombres[dia]} - Turno ${turno}: Falta hora de ENTRADA`);
+            }
+            
+            data[`${dia}_entrada_${turno}`] = valorEntrada || null;
+            data[`${dia}_salida_${turno}`] = valorSalida || null;
+        }
+    });
+    
+    // Si hay errores, mostrarlos y no enviar
+    if (errores.length > 0) {
+        alert('HORARIO INCOMPLETO:\n\n' + errores.join('\n') + '\n\nPor favor complete los turnos o déjelos vacíos.');
+        return;
+    }
+    
+    console.log('Enviando datos de plantilla:', data);
+    
+    fetch('/horarios/plantillas/crear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(r => {
+        if (!r.ok) {
+            return r.json().then(err => { throw new Error(err.error || 'Error del servidor'); });
+        }
+        return r.json();
+    })
+    .then(data => {
+        console.log('Respuesta del servidor:', data);
+        alert(data.mensaje);
+        bootstrap.Modal.getInstance(document.getElementById('modalCrearPlantilla')).hide();
+        form.reset();
+        cargarPlantillas();
+    })
+    .catch(err => {
+        console.error('Error al crear plantilla:', err);
+        alert('Error: ' + err.message);
+    });
+}
+</script>

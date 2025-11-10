@@ -1,0 +1,115 @@
+<!-- Fragmento compartido: Campos de Horarios por Día -->
+<!-- El prefijo ('crear' o 'editar') debe estar definido antes de incluir este template -->
+
+<!-- Tabs de Días -->
+<ul class="nav nav-pills mb-3" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="{{ prefix }}-lunes-tab" data-bs-toggle="pill" data-bs-target="#{{ prefix }}-lunes" type="button" role="tab">Lunes</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="{{ prefix }}-martes-tab" data-bs-toggle="pill" data-bs-target="#{{ prefix }}-martes" type="button" role="tab">Martes</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="{{ prefix }}-miercoles-tab" data-bs-toggle="pill" data-bs-target="#{{ prefix }}-miercoles" type="button" role="tab">Miércoles</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="{{ prefix }}-jueves-tab" data-bs-toggle="pill" data-bs-target="#{{ prefix }}-jueves" type="button" role="tab">Jueves</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="{{ prefix }}-viernes-tab" data-bs-toggle="pill" data-bs-target="#{{ prefix }}-viernes" type="button" role="tab">Viernes</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="{{ prefix }}-sabado-tab" data-bs-toggle="pill" data-bs-target="#{{ prefix }}-sabado" type="button" role="tab">Sábado</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="{{ prefix }}-domingo-tab" data-bs-toggle="pill" data-bs-target="#{{ prefix }}-domingo" type="button" role="tab">Domingo</button>
+    </li>
+</ul>
+
+<!-- Contenido de Tabs -->
+<div class="tab-content">
+    {% for dia in ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'] %}
+    {% if dia == 'lunes' %}{% set dia_nombre = 'Lunes' %}{% endif %}
+    {% if dia == 'martes' %}{% set dia_nombre = 'Martes' %}{% endif %}
+    {% if dia == 'miercoles' %}{% set dia_nombre = 'Miércoles' %}{% endif %}
+    {% if dia == 'jueves' %}{% set dia_nombre = 'Jueves' %}{% endif %}
+    {% if dia == 'viernes' %}{% set dia_nombre = 'Viernes' %}{% endif %}
+    {% if dia == 'sabado' %}{% set dia_nombre = 'Sábado' %}{% endif %}
+    {% if dia == 'domingo' %}{% set dia_nombre = 'Domingo' %}{% endif %}
+    
+    <div class="tab-pane fade {% if dia == 'lunes' %}show active{% endif %}" id="{{ prefix }}-{{ dia }}" role="tabpanel">
+        <h6 class="text-muted mb-3">{{ dia_nombre }}</h6>
+        
+        <!-- Turno Principal -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0">Turno Principal</h6>
+                </div>
+                <div class="row">
+                    <div class="col-6">
+                        <label class="form-label">Entrada</label>
+                        <input type="time" class="form-control" id="{{ prefix }}_{{ dia }}_entrada_1" name="{{ dia }}_entrada_1" onchange="validarTurnoCompleto('{{ prefix }}', '{{ dia }}', 1)">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Salida</label>
+                        <input type="time" class="form-control" id="{{ prefix }}_{{ dia }}_salida_1" name="{{ dia }}_salida_1" onchange="validarTurnoCompleto('{{ prefix }}', '{{ dia }}', 1)">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Turno 2 (Opcional) -->
+        <div class="card">
+            <div class="card-body bg-light">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0 text-secondary">Turno 2 (Opcional)</h6>
+                </div>
+                <div class="row">
+                    <div class="col-6">
+                        <label class="form-label">Entrada</label>
+                        <input type="time" class="form-control" id="{{ prefix }}_{{ dia }}_entrada_2" name="{{ dia }}_entrada_2" onchange="validarTurnoCompleto('{{ prefix }}', '{{ dia }}', 2)">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Salida</label>
+                        <input type="time" class="form-control" id="{{ prefix }}_{{ dia }}_salida_2" name="{{ dia }}_salida_2" onchange="validarTurnoCompleto('{{ prefix }}', '{{ dia }}', 2)">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+// Validación en tiempo real de turnos completos
+function validarTurnoCompleto(prefix, dia, turno) {
+    const entrada = document.getElementById(`${prefix}_${dia}_entrada_${turno}`);
+    const salida = document.getElementById(`${prefix}_${dia}_salida_${turno}`);
+    
+    if (!entrada || !salida) return;
+    
+    const tieneEntrada = entrada.value !== '';
+    const tieneSalida = salida.value !== '';
+    
+    // Ambos vacíos = válido (turno no usado)
+    if (!tieneEntrada && !tieneSalida) {
+        entrada.classList.remove('is-invalid');
+        salida.classList.remove('is-invalid');
+        return;
+    }
+    
+    // Solo uno lleno = inválido
+    if (tieneEntrada && !tieneSalida) {
+        entrada.classList.remove('is-invalid');
+        salida.classList.add('is-invalid');
+    } else if (!tieneEntrada && tieneSalida) {
+        entrada.classList.add('is-invalid');
+        salida.classList.remove('is-invalid');
+    } else {
+        // Ambos llenos = válido
+        entrada.classList.remove('is-invalid');
+        salida.classList.remove('is-invalid');
+    }
+}
+</script>

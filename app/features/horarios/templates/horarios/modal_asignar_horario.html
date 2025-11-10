@@ -1,0 +1,150 @@
+<!-- Modal: Asignar Horario a Trabajador -->
+<div class="modal fade" id="modalAsignarHorario" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-person-check"></i> Asignar Horario</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formAsignarHorario">
+                    <div class="mb-3">
+                        <label class="form-label">Trabajador *</label>
+                        <select class="form-select" name="num_trabajador" id="selectTrabajador" required>
+                            <option value="">Seleccionar...</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Plantilla de Horario *</label>
+                        <select class="form-select" name="plantilla_horario_id" id="selectPlantilla" required>
+                            <option value="">Seleccionar...</option>
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Fecha Inicio *</label>
+                            <input type="date" class="form-control" name="fecha_inicio_asignacion" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Fecha Fin</label>
+                            <input type="date" class="form-control" name="fecha_fin_asignacion">
+                        </div>
+                    </div>
+
+                    <div class="mb-3 mt-3">
+                        <label class="form-label">Semestre *</label>
+                        <select class="form-select" name="semestre" required>
+                            <option value="">Seleccionar...</option>
+                            {% for semestre in semestres %}
+                            <option value="{{ semestre }}">{{ semestre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Estado</label>
+                        <select class="form-select" name="estado_asignacion">
+                            <option value="activo">Activo</option>
+                            <option value="finalizado">Finalizado</option>
+                            <option value="suspendido">Suspendido</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="guardarAsignacion()">
+                    <i class="bi bi-check-circle"></i> Asignar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Cargar trabajadores y plantillas al abrir modal
+document.getElementById('modalAsignarHorario').addEventListener('show.bs.modal', () => {
+    cargarTrabajadoresSelect();
+    cargarPlantillasSelect();
+});
+
+function cargarTrabajadoresSelect() {
+    console.log('[MODAL ASIGNAR] Cargando trabajadores...');
+    fetch('/trabajadores/listar?activo=true')
+        .then(r => r.json())
+        .then(data => {
+            console.log('[MODAL ASIGNAR] Respuesta de /trabajadores/listar:', data);
+            const select = document.getElementById('selectTrabajador');
+            select.innerHTML = '<option value="">Seleccionar...</option>';
+            
+            if (data.trabajadores) {
+                console.log(`[MODAL ASIGNAR] ${data.trabajadores.length} trabajadores encontrados`);
+                data.trabajadores.forEach(t => {
+                    select.innerHTML += `<option value="${t.num_trabajador}">${t.num_trabajador} - ${t.nombre}</option>`;
+                });
+            } else {
+                console.warn('[MODAL ASIGNAR] No se encontró data.trabajadores en la respuesta');
+            }
+        })
+        .catch(err => {
+            console.error('[MODAL ASIGNAR] Error cargando trabajadores:', err);
+        });
+}
+
+function cargarPlantillasSelect() {
+    console.log('[MODAL ASIGNAR] Cargando plantillas...');
+    fetch('/horarios/plantillas/listar?activo=true')
+        .then(r => r.json())
+        .then(data => {
+            console.log('[MODAL ASIGNAR] Respuesta de /horarios/plantillas/listar:', data);
+            const select = document.getElementById('selectPlantilla');
+            select.innerHTML = '<option value="">Seleccionar...</option>';
+            
+            if (data.plantillas) {
+                console.log(`[MODAL ASIGNAR] ${data.plantillas.length} plantillas encontradas`);
+                data.plantillas.forEach(p => {
+                    select.innerHTML += `<option value="${p.id}">${p.nombre_horario}</option>`;
+                });
+            } else {
+                console.warn('[MODAL ASIGNAR] No se encontró data.plantillas en la respuesta');
+            }
+        })
+        .catch(err => {
+            console.error('[MODAL ASIGNAR] Error cargando plantillas:', err);
+        });
+}
+
+function guardarAsignacion() {
+    const form = document.getElementById('formAsignarHorario');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const formData = new FormData(form);
+    const data = {};
+    for (let [key, value] of formData.entries()) {
+        data[key] = value || null;
+    }
+    
+    fetch('/horarios/asignaciones/crear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            alert(data.mensaje);
+            bootstrap.Modal.getInstance(document.getElementById('modalAsignarHorario')).hide();
+            form.reset();
+            cargarAsignaciones();
+        }
+    })
+    .catch(err => alert('Error: ' + err.message));
+}
+</script>

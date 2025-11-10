@@ -263,6 +263,7 @@ def cambiar_departamento():
         return jsonify({'error': str(e)}), 500
 
 
+
 @trabajadores_bp.route('/departamentos-activos')
 def departamentos_activos():
     """Obtener lista de departamentos activos para el selector"""
@@ -278,4 +279,53 @@ def departamentos_activos():
         return jsonify({'error': error}), 500
     
     return jsonify({'departamentos': resultado if resultado else []})
+
+
+@trabajadores_bp.route('/listar')
+def listar():
+    """API: Listar trabajadores para selects y otras interfaces JSON"""
+    activo = request.args.get('activo')
+    
+    # Construir query
+    query = """
+        SELECT 
+            t.id,
+            t.num_trabajador,
+            t.nombre,
+            t.departamento_id,
+            t.tipoPlaza,
+            t.activo,
+            d.nombre as departamento_nombre
+        FROM trabajadores t
+        LEFT JOIN departamentos d ON t.departamento_id = d.id
+    """
+    
+    params = []
+    
+    # Aplicar filtro de activo si se especifica
+    if activo is not None:
+        # Convertir a 1 o 0 según el valor
+        if activo.lower() in ['true', '1', 'si']:
+            activo_valor = 1
+        else:
+            activo_valor = 0
+        query += " WHERE t.activo = %s"
+        params.append(activo_valor)
+        print(f"[LISTAR TRABAJADORES] Filtrando por activo={activo_valor}")
+    
+    query += " ORDER BY t.nombre ASC"
+    
+    print(f"[LISTAR TRABAJADORES] Query: {query}")
+    print(f"[LISTAR TRABAJADORES] Params: {params}")
+    
+    resultado, error = query_executor.ejecutar(query, tuple(params) if params else None)
+    
+    if error:
+        print(f"[LISTAR TRABAJADORES] Error: {error}")
+        return jsonify({'error': error}), 500
+    
+    print(f"[LISTAR TRABAJADORES] Encontrados: {len(resultado) if resultado else 0} trabajadores")
+    
+    return jsonify({'trabajadores': resultado if resultado else []})
+
 

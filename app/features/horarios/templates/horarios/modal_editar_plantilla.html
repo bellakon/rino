@@ -1,0 +1,201 @@
+<!-- Modal: Editar Plantilla de Horario -->
+<div class="modal fade" id="modalEditarPlantilla" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="bi bi-pencil"></i> Editar Plantilla de Horario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarPlantilla">
+                    <input type="hidden" id="editar_plantilla_id">
+                    
+                    <!-- Información General -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nombre del Horario *</label>
+                            <input type="text" class="form-control" id="editar_nombre_horario" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Descripción</label>
+                            <input type="text" class="form-control" id="editar_descripcion_horario">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="editar_activo" checked>
+                                <label class="form-check-label" for="editar_activo">Activo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Campos de horarios compartidos -->
+                    {% set prefix = 'editar' %}
+                    {% include 'horarios/form_horarios_dias.html' %}
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" onclick="guardarEdicionPlantilla()">
+                    <i class="bi bi-save"></i> Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function abrirModalEditar(id) {
+    console.log('Abriendo modal para editar plantilla ID:', id);
+    
+    // Cargar datos de la plantilla
+    fetch(`/horarios/plantillas/obtener/${id}`)
+        .then(r => r.json())
+        .then(data => {
+            console.log('Datos recibidos del servidor:', data);
+            
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+            
+            const p = data.plantilla;
+            console.log('Plantilla a cargar:', p);
+            
+            // Llenar formulario
+            document.getElementById('editar_plantilla_id').value = p.id;
+            document.getElementById('editar_nombre_horario').value = p.nombre_horario;
+            document.getElementById('editar_descripcion_horario').value = p.descripcion_horario || '';
+            document.getElementById('editar_activo').checked = p.activo;
+            
+            console.log('Campos básicos cargados');
+            
+            // Días de la semana
+            const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            dias.forEach(dia => {
+                for (let turno = 1; turno <= 2; turno++) {
+                    const fieldName = `${dia}_entrada_${turno}`;
+                    const inputId = `editar_${dia}_entrada_${turno}`;
+                    const entrada = document.getElementById(inputId);
+                    const salida = document.getElementById(`editar_${dia}_salida_${turno}`);
+                    
+                    if (entrada) {
+                        entrada.value = p[fieldName] || '';
+                        console.log(`Cargando ${fieldName}: "${p[fieldName]}" en input ${inputId}`);
+                    } else {
+                        console.error(`No se encontró input: ${inputId}`);
+                    }
+                    
+                    if (salida) {
+                        salida.value = p[`${dia}_salida_${turno}`] || '';
+                    } else {
+                        console.error(`No se encontró input: editar_${dia}_salida_${turno}`);
+                    }
+                }
+            });
+            
+            console.log('Todos los campos de horarios cargados');
+            
+            // DEBUG: Listar todos los inputs que existen
+            console.log('Inputs encontrados en el DOM:');
+            const allInputs = document.querySelectorAll('[id^="editar_"]');
+            allInputs.forEach(input => {
+                console.log(`  - ${input.id}: ${input.value}`);
+            });
+            
+            // Abrir modal
+            new bootstrap.Modal(document.getElementById('modalEditarPlantilla')).show();
+        })
+        .catch(err => {
+            console.error('Error completo:', err);
+            alert('Error: ' + err.message);
+        });
+}
+
+function guardarEdicionPlantilla() {
+    const id = document.getElementById('editar_plantilla_id').value;
+    const nombre = document.getElementById('editar_nombre_horario').value.trim();
+    
+    // Validar nombre requerido
+    if (!nombre) {
+        alert('El nombre del horario es requerido');
+        return;
+    }
+    
+    // Construir objeto con todos los campos
+    const data = {
+        nombre_horario: nombre,
+        descripcion_horario: document.getElementById('editar_descripcion_horario').value.trim(),
+        activo: document.getElementById('editar_activo').checked
+    };
+    
+    // Agregar todos los campos de horarios y validar que estén completos
+    const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+    const diasNombres = {
+        'lunes': 'Lunes',
+        'martes': 'Martes', 
+        'miercoles': 'Miércoles',
+        'jueves': 'Jueves',
+        'viernes': 'Viernes',
+        'sabado': 'Sábado',
+        'domingo': 'Domingo'
+    };
+    
+    let errores = [];
+    
+    dias.forEach(dia => {
+        for (let turno = 1; turno <= 2; turno++) {
+            const entrada = document.getElementById(`editar_${dia}_entrada_${turno}`);
+            const salida = document.getElementById(`editar_${dia}_salida_${turno}`);
+            
+            const valorEntrada = entrada ? entrada.value : '';
+            const valorSalida = salida ? salida.value : '';
+            
+            // Validar que si uno tiene valor, el otro también
+            if (valorEntrada && !valorSalida) {
+                errores.push(`${diasNombres[dia]} - Turno ${turno}: Falta hora de SALIDA`);
+            }
+            if (valorSalida && !valorEntrada) {
+                errores.push(`${diasNombres[dia]} - Turno ${turno}: Falta hora de ENTRADA`);
+            }
+            
+            data[`${dia}_entrada_${turno}`] = valorEntrada || null;
+            data[`${dia}_salida_${turno}`] = valorSalida || null;
+        }
+    });
+    
+    // Si hay errores, mostrarlos y no enviar
+    if (errores.length > 0) {
+        alert('HORARIO INCOMPLETO:\n\n' + errores.join('\n') + '\n\nPor favor complete los turnos o déjelos vacíos.');
+        return;
+    }
+    
+    console.log('Editando plantilla ID:', id, 'con datos:', data);
+    
+    fetch(`/horarios/plantillas/editar/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(r => {
+        if (!r.ok) {
+            return r.json().then(err => { throw new Error(err.error || 'Error del servidor'); });
+        }
+        return r.json();
+    })
+    .then(data => {
+        console.log('Respuesta del servidor:', data);
+        alert(data.mensaje);
+        bootstrap.Modal.getInstance(document.getElementById('modalEditarPlantilla')).hide();
+        cargarPlantillas();
+    })
+    .catch(err => {
+        console.error('Error al editar plantilla:', err);
+        alert('Error: ' + err.message);
+    });
+}
+</script>

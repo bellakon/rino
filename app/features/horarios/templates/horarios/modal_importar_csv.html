@@ -1,0 +1,177 @@
+<!-- Modal: Importar Horarios desde CSV -->
+<div class="modal fade" id="modalImportarCSV" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="bi bi-upload"></i> Importar Horarios desde CSV</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <strong><i class="bi bi-info-circle"></i> Instrucciones:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Descarga la plantilla CSV usando el botón "Descargar Plantilla"</li>
+                        <li>Llena el archivo con: <code>num_trabajador, nombre_horario, descripcion, horarios, fechas, semestre</code></li>
+                        <li>El sistema <strong>creará plantillas automáticamente</strong> y las reutilizará si tienen el mismo horario (por hash)</li>
+                        <li>Las horas deben estar en formato 24h (HH:MM), ejemplo: 9:00 o 09:00</li>
+                        <li><strong>Validación de traslapes:</strong> No se asignarán horarios si el trabajador ya tiene uno en ese rango de fechas</li>
+                        <li>Los trabajadores deben existir en el sistema</li>
+                    </ul>
+                </div>
+
+                <form id="formImportarCSV">
+                    <div class="mb-3">
+                        <label class="form-label">Seleccionar archivo CSV</label>
+                        <input type="file" class="form-control" id="archivoCSV" accept=".csv" required>
+                    </div>
+
+                    <div id="resultadoImportacion" class="mt-3" style="display: none;">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <strong>Resultados de la Importación</strong>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-md-4">
+                                        <h3 id="totalFilas" class="text-primary">0</h3>
+                                        <small>Filas procesadas</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h3 id="plantillasCreadas" class="text-success">0</h3>
+                                        <small>Plantillas creadas</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h3 id="asignacionesExitosas" class="text-info">0</h3>
+                                        <small>Asignaciones exitosas</small>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row text-center">
+                                    <div class="col-md-6">
+                                        <h3 id="plantillasReutilizadas" class="text-warning">0</h3>
+                                        <small>Plantillas reutilizadas</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h3 id="trabajadoresNoEncontrados" class="text-danger">0</h3>
+                                        <small>Trabajadores no encontrados</small>
+                                    </div>
+                                </div>
+
+                                <div id="detalleErrores" class="mt-3" style="display: none;">
+                                    <hr>
+                                    <h6 class="text-danger">Errores detectados:</h6>
+                                    <ul id="listaErrores" class="small"></ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-warning" onclick="importarCSV()">
+                    <i class="bi bi-upload"></i> Importar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function importarCSV() {
+    const archivo = document.getElementById('archivoCSV').files[0];
+    
+    if (!archivo) {
+        alert('Por favor selecciona un archivo CSV');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+    
+    // Mostrar loading
+    const resultadoDiv = document.getElementById('resultadoImportacion');
+    resultadoDiv.style.display = 'block';
+    resultadoDiv.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Procesando...</span>
+            </div>
+            <p class="mt-2">Importando datos, por favor espera...</p>
+        </div>
+    `;
+    
+    fetch('/horarios/importar', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        console.log('=== RESULTADO COMPLETO DE IMPORTACIÓN ===');
+        console.log('data:', data);
+        console.log('data.resultados:', data.resultados);
+        
+        if (data.error) {
+            resultadoDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+            return;
+        }
+        
+        const res = data.resultados;
+        
+        console.log('Asignaciones exitosas:', res.asignaciones_exitosas);
+        console.log('Errores:', res.errores);
+        console.log('Trabajadores no encontrados:', res.trabajadores_no_encontrados);
+        
+        // Mostrar resultados
+        resultadoDiv.innerHTML = `
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <strong>Resultados de la Importación</strong>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <h3 class="text-primary">${res.total_filas}</h3>
+                            <small>Filas procesadas</small>
+                        </div>
+                        <div class="col-md-4">
+                            <h3 class="text-success">${res.plantillas_creadas}</h3>
+                            <small>Plantillas creadas</small>
+                        </div>
+                        <div class="col-md-4">
+                            <h3 class="text-info">${res.asignaciones_exitosas}</h3>
+                            <small>Asignaciones exitosas</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-md-6">
+                            <h3 class="text-warning">${res.plantillas_reutilizadas}</h3>
+                            <small>Plantillas reutilizadas</small>
+                        </div>
+                        <div class="col-md-6">
+                            <h3 class="text-danger">${res.trabajadores_no_encontrados.length}</h3>
+                            <small>Trabajadores no encontrados</small>
+                        </div>
+                    </div>
+                    ${res.errores.length > 0 || res.trabajadores_no_encontrados.length > 0 ? `
+                        <hr>
+                        <h6 class="text-danger">Detalles:</h6>
+                        <ul class="small">
+                            ${res.trabajadores_no_encontrados.map(t => `<li>Trabajador no encontrado: ${t}</li>`).join('')}
+                            ${res.errores.map(e => `<li class="text-danger">${e}</li>`).join('')}
+                        </ul>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+        
+        // Recargar tablas
+        cargarPlantillas();
+        cargarAsignaciones();
+    })
+    .catch(err => {
+        resultadoDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
+    });
+}
+</script>
