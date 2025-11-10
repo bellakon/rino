@@ -49,10 +49,19 @@
                         <a class="nav-link" href="{{ url_for('departamentos.index') }}">Departamentos</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('horarios.index') }}">Horarios</a>
+                        <a class="nav-link" href="{{ url_for('horarios.index') }}">
+                            <i class="bi bi-calendar-week"></i> Horarios
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('asistencias.index') }}">Asistencias</a>
+                        <a class="nav-link" href="{{ url_for('movimientos.index') }}">
+                            <i class="bi bi-file-earmark-text"></i> Movimientos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('asistencias.index') }}">
+                            <i class="bi bi-calendar-check"></i> Asistencias
+                        </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('migrar_datos.index') }}">Migrar a RinoTime</a>

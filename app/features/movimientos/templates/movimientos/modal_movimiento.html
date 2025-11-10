@@ -1,0 +1,68 @@
+<!-- Modal: Crear/Editar Movimiento -->
+<div class="modal fade" id="modalMovimiento" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="modalMovimientoLabel">Movimiento</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formMovimiento">
+                    <input type="hidden" id="movimientoId">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="movNumTrabajador" class="form-label">Trabajador <span class="text-danger">*</span></label>
+                                <select class="form-select" id="movNumTrabajador" required>
+                                    <option value="">Seleccione un trabajador...</option>
+                                </select>
+                                <small class="text-muted">Puede estar activo o inactivo</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="movTipoMovimiento" class="form-label">Tipo de Movimiento <span class="text-danger">*</span></label>
+                                <select class="form-select" id="movTipoMovimiento" required>
+                                    <option value="">Seleccione...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="movFechaInicio" class="form-label">Fecha Inicio <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="movFechaInicio" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="movFechaFin" class="form-label">Fecha Fin <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="movFechaFin" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="movObservaciones" class="form-label">Observaciones / Justificación</label>
+                        <textarea class="form-control" id="movObservaciones" rows="3" placeholder="Motivo o justificación del movimiento"></textarea>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div id="camposPersonalizadosMovimiento">
+                        <!-- Campos dinámicos según el tipo de movimiento seleccionado -->
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="guardarMovimiento()">
+                    <i class="bi bi-save"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

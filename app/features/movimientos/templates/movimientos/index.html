@@ -1,0 +1,866 @@
+{% extends "base.html" %}
+
+{% block title %}Movimientos{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="bi bi-file-earmark-text"></i> Gestión de Movimientos
+        </h1>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-pills mb-4" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tipos-tab" data-bs-toggle="pill" data-bs-target="#tipos" type="button" role="tab">
+            <i class="bi bi-tags"></i> Tipos de Movimientos
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="movimientos-tab" data-bs-toggle="pill" data-bs-target="#movimientos" type="button" role="tab">
+            <i class="bi bi-list-task"></i> Movimientos Realizados
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content">
+    <!-- Tab: Tipos de Movimientos -->
+    <div class="tab-pane fade show active" id="tipos" role="tabpanel">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-tags"></i> Catálogo de Tipos de Movimientos</h5>
+                    <div>
+                        <button type="button" class="btn btn-light btn-sm me-2" onclick="mostrarModalCrearTipo()">
+                            <i class="bi bi-plus-circle"></i> Nuevo Tipo
+                        </button>
+                        <button type="button" class="btn btn-light btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalImportarTiposCSV">
+                            <i class="bi bi-upload"></i> Importar CSV
+                        </button>
+                        <a href="{{ url_for('movimientos.descargar_plantilla_tipos_csv') }}" class="btn btn-light btn-sm">
+                            <i class="bi bi-download"></i> Plantilla CSV
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Filtros Tipos -->
+                <div class="row mb-3">
+                    <div class="col-md-2">
+                        <input type="text" class="form-control" id="filtroNomenclatura" placeholder="Nomenclatura">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" id="filtroNombreTipo" placeholder="Nombre">
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="filtroCategoria">
+                            <option value="">Todas las categorías</option>
+                            <option value="Comisión">Comisión</option>
+                            <option value="Licencia">Licencia</option>
+                            <option value="Permiso">Permiso</option>
+                            <option value="Autorización">Autorización</option>
+                            <option value="Capacitación">Capacitación</option>
+                            <option value="Otros">Otros</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="filtroLetra">
+                            <option value="">Todas las letras</option>
+                            {% for letra in letras %}
+                            <option value="{{ letra.value }}">{{ letra.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-primary w-100" onclick="cargarTiposMovimientos()">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabla Tipos -->
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Nomenclatura</th>
+                                <th>Nombre</th>
+                                <th>Categoría</th>
+                                <th>Letra</th>
+                                <th>Descripción</th>
+                                <th>Campos Personalizados</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaTiposMovimientos">
+                            <tr>
+                                <td colspan="8" class="text-center">Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: Movimientos -->
+    <div class="tab-pane fade" id="movimientos" role="tabpanel">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-list-task"></i> Movimientos Realizados</h5>
+                    <div>
+                        <button type="button" class="btn btn-light btn-sm me-2" onclick="mostrarModalCrearMovimiento()">
+                            <i class="bi bi-plus-circle"></i> Nuevo Movimiento
+                        </button>
+                        <button type="button" class="btn btn-light btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalImportarMovimientosCSV">
+                            <i class="bi bi-upload"></i> Importar CSV
+                        </button>
+                        <a href="{{ url_for('movimientos.descargar_plantilla_movimientos_csv') }}" class="btn btn-light btn-sm">
+                            <i class="bi bi-download"></i> Plantilla CSV
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Filtros Movimientos -->
+                <div class="row mb-3">
+                    <div class="col-md-2">
+                        <input type="number" class="form-control" id="filtroNumTrabajador" placeholder="# Trabajador">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" id="filtroNombreTrabajador" placeholder="Nombre Trabajador">
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" id="filtroTipoMovimiento">
+                            <option value="">Todos los tipos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="date" class="form-control" id="filtroFechaInicio" placeholder="Fecha Inicio">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="date" class="form-control" id="filtroFechaFin" placeholder="Fecha Fin">
+                    </div>
+                    <div class="col-md-1">
+                        <button class="btn btn-primary w-100" onclick="cargarMovimientos()">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabla Movimientos -->
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th># Trabajador</th>
+                                <th>Nombre</th>
+                                <th>Tipo</th>
+                                <th>Fecha Inicio</th>
+                                <th>Fecha Fin</th>
+                                <th>Observaciones</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaMovimientos">
+                            <tr>
+                                <td colspan="8" class="text-center">Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modales -->
+{% include 'movimientos/modal_tipo_movimiento.html' %}
+{% include 'movimientos/modal_movimiento.html' %}
+{% include 'movimientos/modal_importar_tipos_csv.html' %}
+{% include 'movimientos/modal_importar_movimientos_csv.html' %}
+{% include 'movimientos/modal_ver_campos.html' %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ==================== TIPOS DE MOVIMIENTOS ====================
+
+let tiposMovimientos = [];
+
+// Auto-cargar al abrir tabs
+document.addEventListener('DOMContentLoaded', () => {
+    cargarTiposMovimientos();
+    
+    // Registrar evento de cambio de tab
+    const movimientosTab = document.getElementById('movimientos-tab');
+    if (movimientosTab) {
+        movimientosTab.addEventListener('shown.bs.tab', () => {
+            cargarMovimientos();
+            cargarTiposParaFiltro();
+        });
+    }
+});
+
+function cargarTiposMovimientos() {
+    const nomenclatura = document.getElementById('filtroNomenclatura').value;
+    const nombre = document.getElementById('filtroNombreTipo').value;
+    const categoria = document.getElementById('filtroCategoria').value;
+    const letra = document.getElementById('filtroLetra').value;
+    
+    let url = '/movimientos/tipos/listar?';
+    if (nomenclatura) url += `nomenclatura=${encodeURIComponent(nomenclatura)}&`;
+    if (nombre) url += `nombre=${encodeURIComponent(nombre)}&`;
+    if (categoria) url += `categoria=${encodeURIComponent(categoria)}&`;
+    if (letra) url += `letra=${encodeURIComponent(letra)}&`;
+    
+    console.log('Cargando tipos desde:', url);
+    
+    fetch(url)
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Datos recibidos:', data);
+            console.log('Cantidad de tipos:', data.length);
+            tiposMovimientos = data;
+            renderTablaTipos(data);
+        })
+        .catch(error => {
+            console.error('Error al cargar tipos:', error);
+            document.getElementById('tablaTiposMovimientos').innerHTML = 
+                '<tr><td colspan="8" class="text-center text-danger">Error al cargar tipos de movimientos</td></tr>';
+        });
+}
+
+function renderTablaTipos(tipos) {
+    const tbody = document.getElementById('tablaTiposMovimientos');
+    
+    console.log('Renderizando tipos, cantidad:', tipos.length);
+    
+    if (tipos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No se encontraron tipos de movimientos</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = tipos.map((tipo, index) => `
+        <tr>
+            <td><span class="badge bg-secondary">${tipo.nomenclatura}</span></td>
+            <td>${tipo.nombre}</td>
+            <td><span class="badge bg-info">${tipo.categoria}</span></td>
+            <td><span class="badge bg-primary">${tipo.letra}</span></td>
+            <td>${tipo.descripcion || '-'}</td>
+            <td>
+                ${tipo.campos_personalizados && tipo.campos_personalizados.length > 0 
+                    ? `<button class="btn btn-sm btn-outline-info" onclick="mostrarCamposPorIndice(${index})">
+                        <i class="bi bi-list-ul"></i> Ver (${tipo.campos_personalizados.length})
+                       </button>`
+                    : '<span class="text-muted">Sin campos</span>'}
+            </td>
+            <td>
+                <span class="badge ${tipo.activo ? 'bg-success' : 'bg-danger'}">
+                    ${tipo.activo ? 'Activo' : 'Inactivo'}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-warning" onclick="editarTipo(${tipo.id})" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="eliminarTipo(${tipo.id}, '${tipo.nomenclatura}')" title="Eliminar">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function mostrarCamposPorIndice(index) {
+    const tipo = tiposMovimientos[index];
+    if (!tipo || !tipo.campos_personalizados || tipo.campos_personalizados.length === 0) {
+        alert('Este tipo de movimiento no tiene campos personalizados definidos.');
+        return;
+    }
+    
+    const campos = tipo.campos_personalizados;
+    
+    // Generar HTML para mostrar los campos
+    const html = campos.map((campo, i) => `
+        <div class="card mb-2">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="bi bi-${getIconForTipo(campo.tipo)}"></i>
+                    ${campo.label}
+                    ${campo.requerido ? '<span class="badge bg-danger ms-2">Requerido</span>' : '<span class="badge bg-secondary ms-2">Opcional</span>'}
+                </h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <strong>Nombre:</strong> ${campo.nombre}
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <strong>Tipo:</strong> 
+                            <span class="badge bg-info">${campo.tipo}</span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('contenidoCamposPersonalizados').innerHTML = html;
+    new bootstrap.Modal(document.getElementById('modalVerCampos')).show();
+}
+
+function mostrarCampos(camposJson) {
+    try {
+        // Parsear el JSON de campos personalizados
+        const campos = JSON.parse(camposJson.replace(/&apos;/g, "'"));
+        
+        if (!campos || campos.length === 0) {
+            alert('Este tipo de movimiento no tiene campos personalizados definidos.');
+            return;
+        }
+        
+        // Generar HTML para mostrar los campos
+        const html = campos.map((campo, index) => `
+            <div class="card mb-2">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="bi bi-${getIconForTipo(campo.tipo)}"></i>
+                        ${campo.label}
+                        ${campo.requerido ? '<span class="badge bg-danger ms-2">Requerido</span>' : '<span class="badge bg-secondary ms-2">Opcional</span>'}
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <strong>Nombre:</strong> ${campo.nombre}
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <strong>Tipo:</strong> 
+                                <span class="badge bg-info">${campo.tipo}</span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        document.getElementById('contenidoCamposPersonalizados').innerHTML = html;
+        new bootstrap.Modal(document.getElementById('modalVerCampos')).show();
+    } catch (error) {
+        console.error('Error parseando campos:', error);
+        alert('Error al mostrar los campos personalizados');
+    }
+}
+
+function getIconForTipo(tipo) {
+    const iconos = {
+        'text': 'input-cursor-text',
+        'textarea': 'text-paragraph',
+        'number': '123',
+        'date': 'calendar-date',
+        'file': 'file-earmark-arrow-up',
+        'email': 'envelope',
+        'tel': 'telephone',
+        'url': 'link-45deg'
+    };
+    return iconos[tipo] || 'dash-circle';
+}
+
+function mostrarModalCrearTipo() {
+    document.getElementById('formTipoMovimiento').reset();
+    document.getElementById('tipoMovimientoId').value = '';
+    document.getElementById('modalTipoMovimientoLabel').textContent = 'Crear Tipo de Movimiento';
+    document.getElementById('camposPersonalizados').innerHTML = '';
+    new bootstrap.Modal(document.getElementById('modalTipoMovimiento')).show();
+}
+
+function editarTipo(id) {
+    const tipo = tiposMovimientos.find(t => t.id === id);
+    if (!tipo) return;
+    
+    document.getElementById('tipoMovimientoId').value = tipo.id;
+    document.getElementById('tipoNomenclatura').value = tipo.nomenclatura;
+    document.getElementById('tipoNombre').value = tipo.nombre;
+    document.getElementById('tipoDescripcion').value = tipo.descripcion || '';
+    document.getElementById('tipoCategoria').value = tipo.categoria;
+    document.getElementById('tipoLetra').value = tipo.letra;
+    document.getElementById('tipoActivo').checked = tipo.activo;
+    
+    // Cargar campos personalizados
+    const container = document.getElementById('camposPersonalizados');
+    container.innerHTML = '';
+    if (tipo.campos_personalizados) {
+        tipo.campos_personalizados.forEach((campo, index) => {
+            agregarCampoPersonalizado(campo);
+        });
+    }
+    
+    document.getElementById('modalTipoMovimientoLabel').textContent = 'Editar Tipo de Movimiento';
+    new bootstrap.Modal(document.getElementById('modalTipoMovimiento')).show();
+}
+
+function eliminarTipo(id, nomenclatura) {
+    if (!confirm(`¿Eliminar el tipo de movimiento "${nomenclatura}"?\n\nNota: Si tiene movimientos asociados, solo se desactivará.`)) return;
+    
+    fetch(`/movimientos/tipos/eliminar/${id}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            alert(data.mensaje || 'Tipo de movimiento eliminado exitosamente');
+            cargarTiposMovimientos();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al eliminar tipo de movimiento');
+    });
+}
+
+function guardarTipoMovimiento() {
+    const tipoId = document.getElementById('tipoMovimientoId').value;
+    const datos = {
+        nomenclatura: document.getElementById('tipoNomenclatura').value.trim().toUpperCase(),
+        nombre: document.getElementById('tipoNombre').value.trim(),
+        descripcion: document.getElementById('tipoDescripcion').value.trim(),
+        categoria: document.getElementById('tipoCategoria').value,
+        letra: document.getElementById('tipoLetra').value,
+        activo: document.getElementById('tipoActivo').checked,
+        campos_personalizados: obtenerCamposPersonalizados()
+    };
+    
+    const url = tipoId ? `/movimientos/tipos/editar/${tipoId}` : '/movimientos/tipos/crear';
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(datos)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            alert(tipoId ? 'Tipo actualizado' : 'Tipo creado exitosamente');
+            bootstrap.Modal.getInstance(document.getElementById('modalTipoMovimiento')).hide();
+            cargarTiposMovimientos();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al guardar tipo de movimiento');
+    });
+}
+
+// ==================== CAMPOS PERSONALIZADOS ====================
+
+let contadorCampos = 0;
+
+function agregarCampoPersonalizado(datosIniciales = null) {
+    const container = document.getElementById('camposPersonalizados');
+    const id = contadorCampos++;
+    
+    const div = document.createElement('div');
+    div.className = 'campo-personalizado mb-3 p-3 border rounded';
+    div.id = `campo-${id}`;
+    div.innerHTML = `
+        <div class="row">
+            <div class="col-md-3">
+                <label>Nombre Campo</label>
+                <input type="text" class="form-control campo-nombre" value="${datosIniciales?.nombre || ''}" placeholder="ej: archivo_pdf">
+            </div>
+            <div class="col-md-2">
+                <label>Tipo</label>
+                <select class="form-select campo-tipo">
+                    <option value="text" ${datosIniciales?.tipo === 'text' ? 'selected' : ''}>Texto</option>
+                    <option value="textarea" ${datosIniciales?.tipo === 'textarea' ? 'selected' : ''}>Texto Largo</option>
+                    <option value="number" ${datosIniciales?.tipo === 'number' ? 'selected' : ''}>Número</option>
+                    <option value="date" ${datosIniciales?.tipo === 'date' ? 'selected' : ''}>Fecha</option>
+                    <option value="file" ${datosIniciales?.tipo === 'file' ? 'selected' : ''}>Archivo</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label>Etiqueta</label>
+                <input type="text" class="form-control campo-label" value="${datosIniciales?.label || ''}" placeholder="ej: Documento PDF">
+            </div>
+            <div class="col-md-2">
+                <label>Requerido</label>
+                <div class="form-check form-switch mt-2">
+                    <input type="checkbox" class="form-check-input campo-requerido" ${datosIniciales?.requerido ? 'checked' : ''}>
+                </div>
+            </div>
+            <div class="col-md-1">
+                <label>&nbsp;</label>
+                <button type="button" class="btn btn-danger btn-sm w-100" onclick="document.getElementById('campo-${id}').remove()">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(div);
+}
+
+function obtenerCamposPersonalizados() {
+    const campos = [];
+    document.querySelectorAll('.campo-personalizado').forEach(div => {
+        const nombre = div.querySelector('.campo-nombre').value.trim();
+        if (nombre) {
+            campos.push({
+                nombre: nombre,
+                tipo: div.querySelector('.campo-tipo').value,
+                label: div.querySelector('.campo-label').value.trim(),
+                requerido: div.querySelector('.campo-requerido').checked
+            });
+        }
+    });
+    return campos;
+}
+
+// ==================== MOVIMIENTOS ====================
+
+let movimientos = [];
+let tiposParaMovimientos = [];
+
+function cargarMovimientos() {
+    const numTrabajador = document.getElementById('filtroNumTrabajador').value;
+    const nombreTrabajador = document.getElementById('filtroNombreTrabajador').value;
+    const tipoMovimiento = document.getElementById('filtroTipoMovimiento').value;
+    const fechaInicio = document.getElementById('filtroFechaInicio').value;
+    const fechaFin = document.getElementById('filtroFechaFin').value;
+    
+    let url = '/movimientos/movimientos/listar?';
+    if (numTrabajador) url += `num_trabajador=${numTrabajador}&`;
+    if (nombreTrabajador) url += `nombre_trabajador=${encodeURIComponent(nombreTrabajador)}&`;
+    if (tipoMovimiento) url += `tipo_movimiento_id=${tipoMovimiento}&`;
+    if (fechaInicio) url += `fecha_inicio=${fechaInicio}&`;
+    if (fechaFin) url += `fecha_fin=${fechaFin}&`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            movimientos = data;
+            renderTablaMovimientos(data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('tablaMovimientos').innerHTML = 
+                '<tr><td colspan="8" class="text-center text-danger">Error al cargar movimientos</td></tr>';
+        });
+}
+
+function renderTablaMovimientos(movs) {
+    const tbody = document.getElementById('tablaMovimientos');
+    
+    if (movs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No se encontraron movimientos</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = movs.map(mov => `
+        <tr>
+            <td>${mov.id}</td>
+            <td>${mov.num_trabajador}</td>
+            <td>${mov.trabajador_nombre}</td>
+            <td><span class="badge bg-primary">${mov.tipo_nomenclatura}</span> ${mov.tipo_nombre}</td>
+            <td>${mov.fecha_inicio}</td>
+            <td>${mov.fecha_fin}</td>
+            <td>${mov.observaciones || '-'}</td>
+            <td>
+                <button class="btn btn-sm btn-warning" onclick="editarMovimiento(${mov.id})" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="eliminarMovimiento(${mov.id})" title="Eliminar">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function cargarTiposParaFiltro() {
+    fetch('/movimientos/tipos/listar?activo=true')
+        .then(response => response.json())
+        .then(data => {
+            tiposParaMovimientos = data;
+            const select = document.getElementById('filtroTipoMovimiento');
+            select.innerHTML = '<option value="">Todos los tipos</option>' +
+                data.map(t => `<option value="${t.id}">${t.nomenclatura} - ${t.nombre}</option>`).join('');
+        });
+}
+
+function mostrarModalCrearMovimiento() {
+    // Limpiar formulario
+    document.getElementById('formMovimiento').reset();
+    document.getElementById('movimientoId').value = '';
+    document.getElementById('modalMovimientoLabel').textContent = 'Crear Movimiento';
+    document.getElementById('camposPersonalizadosMovimiento').innerHTML = '';
+    
+    // Cargar trabajadores
+    fetch('/trabajadores/listar')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('movNumTrabajador');
+            select.innerHTML = '<option value="">Seleccione un trabajador...</option>' +
+                data.trabajadores.map(t => 
+                    `<option value="${t.num_trabajador}">${t.num_trabajador} - ${t.nombre}${!t.activo ? ' (INACTIVO)' : ''}</option>`
+                ).join('');
+        })
+        .catch(error => console.error('Error cargando trabajadores:', error));
+    
+    // Cargar tipos activos
+    fetch('/movimientos/tipos/listar?activo=true')
+        .then(response => response.json())
+        .then(data => {
+            tiposParaMovimientos = data;
+            const select = document.getElementById('movTipoMovimiento');
+            select.innerHTML = '<option value="">Seleccione...</option>' +
+                data.map(t => `<option value="${t.id}">${t.nomenclatura} - ${t.nombre}</option>`).join('');
+        })
+        .catch(error => console.error('Error cargando tipos:', error));
+    
+    new bootstrap.Modal(document.getElementById('modalMovimiento')).show();
+}
+
+function editarMovimiento(id) {
+    // Cargar trabajadores y tipos de movimientos en paralelo
+    Promise.all([
+        fetch('/trabajadores/listar').then(r => r.json()),
+        fetch('/movimientos/tipos/listar?activo=true').then(r => r.json()),
+        fetch(`/movimientos/movimientos/obtener/${id}`).then(r => r.json())
+    ])
+    .then(([trabajadoresData, tiposData, movData]) => {
+        // Cargar select de trabajadores
+        const selectTrabajador = document.getElementById('movNumTrabajador');
+        selectTrabajador.innerHTML = '<option value="">Seleccione un trabajador...</option>' +
+            trabajadoresData.trabajadores.map(t => 
+                `<option value="${t.num_trabajador}">${t.num_trabajador} - ${t.nombre}${!t.activo ? ' (INACTIVO)' : ''}</option>`
+            ).join('');
+        
+        // Cargar select de tipos
+        tiposParaMovimientos = tiposData;
+        const selectTipo = document.getElementById('movTipoMovimiento');
+        selectTipo.innerHTML = '<option value="">Seleccione...</option>' +
+            tiposData.map(t => `<option value="${t.id}">${t.nomenclatura} - ${t.nombre}</option>`).join('');
+        
+        // Llenar formulario con datos del movimiento
+        document.getElementById('movimientoId').value = movData.id;
+        document.getElementById('movNumTrabajador').value = movData.num_trabajador;
+        document.getElementById('movTipoMovimiento').value = movData.tipo_movimiento_id;
+        document.getElementById('movFechaInicio').value = movData.fecha_inicio;
+        document.getElementById('movFechaFin').value = movData.fecha_fin;
+        document.getElementById('movObservaciones').value = movData.observaciones || '';
+        
+        // Cargar campos personalizados del tipo
+        cargarCamposPersonalizadosParaMovimiento(movData.tipo_movimiento_id, movData.datos_personalizados);
+        
+        document.getElementById('modalMovimientoLabel').textContent = 'Editar Movimiento';
+        new bootstrap.Modal(document.getElementById('modalMovimiento')).show();
+    })
+    .catch(error => console.error('Error cargando movimiento:', error));
+}
+
+function eliminarMovimiento(id) {
+    if (!confirm('¿Eliminar este movimiento?')) return;
+    
+    fetch(`/movimientos/movimientos/eliminar/${id}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            alert('Movimiento eliminado');
+            cargarMovimientos();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al eliminar movimiento');
+    });
+}
+
+function guardarMovimiento() {
+    const movId = document.getElementById('movimientoId').value;
+    const datos = {
+        num_trabajador: document.getElementById('movNumTrabajador').value,
+        tipo_movimiento_id: document.getElementById('movTipoMovimiento').value,
+        fecha_inicio: document.getElementById('movFechaInicio').value,
+        fecha_fin: document.getElementById('movFechaFin').value,
+        observaciones: document.getElementById('movObservaciones').value,
+        datos_personalizados: obtenerDatosPersonalizadosMovimiento()
+    };
+    
+    const url = movId ? `/movimientos/movimientos/editar/${movId}` : '/movimientos/movimientos/crear';
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(datos)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            alert(movId ? 'Movimiento actualizado' : 'Movimiento creado');
+            bootstrap.Modal.getInstance(document.getElementById('modalMovimiento')).hide();
+            cargarMovimientos();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al guardar movimiento');
+    });
+}
+
+// Cargar campos dinámicos según tipo seleccionado
+document.addEventListener('DOMContentLoaded', () => {
+    const selectTipo = document.getElementById('movTipoMovimiento');
+    if (selectTipo) {
+        selectTipo.addEventListener('change', function() {
+            if (this.value) {
+                cargarCamposPersonalizadosParaMovimiento(this.value, {});
+            } else {
+                document.getElementById('camposPersonalizadosMovimiento').innerHTML = '';
+            }
+        });
+    }
+});
+
+function cargarCamposPersonalizadosParaMovimiento(tipoId, valoresActuales = {}) {
+    fetch(`/movimientos/tipos/obtener/${tipoId}`)
+        .then(response => response.json())
+        .then(tipo => {
+            const container = document.getElementById('camposPersonalizadosMovimiento');
+            container.innerHTML = '';
+            
+            if (!tipo.campos_personalizados || tipo.campos_personalizados.length === 0) {
+                return;
+            }
+            
+            tipo.campos_personalizados.forEach(campo => {
+                const valor = valoresActuales[campo.nombre] || '';
+                let inputHtml = '';
+                
+                switch (campo.tipo) {
+                    case 'textarea':
+                        inputHtml = `<textarea class="form-control dato-personalizado" data-nombre="${campo.nombre}" ${campo.requerido ? 'required' : ''}>${valor}</textarea>`;
+                        break;
+                    case 'number':
+                        inputHtml = `<input type="number" class="form-control dato-personalizado" data-nombre="${campo.nombre}" value="${valor}" ${campo.requerido ? 'required' : ''}>`;
+                        break;
+                    case 'date':
+                        inputHtml = `<input type="date" class="form-control dato-personalizado" data-nombre="${campo.nombre}" value="${valor}" ${campo.requerido ? 'required' : ''}>`;
+                        break;
+                    case 'file':
+                        inputHtml = `<input type="text" class="form-control dato-personalizado" data-nombre="${campo.nombre}" value="${valor}" placeholder="Ruta del archivo" ${campo.requerido ? 'required' : ''}>`;
+                        break;
+                    default:
+                        inputHtml = `<input type="text" class="form-control dato-personalizado" data-nombre="${campo.nombre}" value="${valor}" ${campo.requerido ? 'required' : ''}>`;
+                }
+                
+                const div = document.createElement('div');
+                div.className = 'mb-3';
+                div.innerHTML = `
+                    <label class="form-label">
+                        ${campo.label} ${campo.requerido ? '<span class="text-danger">*</span>' : ''}
+                    </label>
+                    ${inputHtml}
+                `;
+                container.appendChild(div);
+            });
+        });
+}
+
+function obtenerDatosPersonalizadosMovimiento() {
+    const datos = {};
+    document.querySelectorAll('.dato-personalizado').forEach(input => {
+        const nombre = input.getAttribute('data-nombre');
+        datos[nombre] = input.value;
+    });
+    return datos;
+}
+
+// ==================== IMPORTAR CSV ====================
+
+function importarTiposCSV() {
+    const fileInput = document.getElementById('archivoTiposCSV');
+    if (!fileInput.files[0]) {
+        alert('Seleccione un archivo');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    
+    fetch('/movimientos/tipos/importar', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        let mensaje = `Exitosos: ${data.exitosos}\n`;
+        if (data.errores.length > 0) {
+            mensaje += `\nErrores:\n${data.errores.join('\n')}`;
+        }
+        alert(mensaje);
+        bootstrap.Modal.getInstance(document.getElementById('modalImportarTiposCSV')).hide();
+        cargarTiposMovimientos();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al importar CSV');
+    });
+}
+
+function importarMovimientosCSV() {
+    const fileInput = document.getElementById('archivoMovimientosCSV');
+    if (!fileInput.files[0]) {
+        alert('Seleccione un archivo');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    formData.append('usuario_registro', 'sistema');
+    
+    fetch('/movimientos/movimientos/importar', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        let mensaje = `Exitosos: ${data.exitosos}\n`;
+        if (data.errores.length > 0) {
+            mensaje += `\nErrores:\n${data.errores.join('\n')}`;
+        }
+        alert(mensaje);
+        bootstrap.Modal.getInstance(document.getElementById('modalImportarMovimientosCSV')).hide();
+        cargarMovimientos();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al importar CSV');
+    });
+}
+</script>
+{% endblock %}

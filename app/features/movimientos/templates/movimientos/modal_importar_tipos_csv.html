@@ -1,0 +1,33 @@
+<!-- Modal: Importar Tipos de Movimientos CSV -->
+<div class="modal fade" id="modalImportarTiposCSV" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Importar Tipos de Movimientos desde CSV</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <strong>Formato del archivo CSV:</strong>
+                    <ul class="mb-0">
+                        <li>Columnas: id, nomenclatura, nombre, descripcion, categoria, campos_personalizados, activo</li>
+                        <li>Si el ID existe, se actualiza; si no, se crea nuevo</li>
+                        <li>campos_personalizados debe ser JSON válido o vacío</li>
+                        <li>Categorías: Comisión, Licencia, Permiso, Autorización, Capacitación, Otros</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="archivoTiposCSV" class="form-label">Seleccionar archivo CSV</label>
+                    <input type="file" class="form-control" id="archivoTiposCSV" accept=".csv">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-info" onclick="importarTiposCSV()">
+                    <i class="bi bi-upload"></i> Importar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

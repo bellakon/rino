@@ -1,0 +1,33 @@
+<!-- Modal: Importar Movimientos CSV -->
+<div class="modal fade" id="modalImportarMovimientosCSV" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Importar Movimientos desde CSV</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <strong>Formato del archivo CSV:</strong>
+                    <ul class="mb-0">
+                        <li>Columnas: id, num_trabajador, tipo_movimiento_id, fecha_inicio, fecha_fin, observaciones, datos_personalizados</li>
+                        <li>Fechas en formato: YYYY-MM-DD</li>
+                        <li>El trabajador y tipo de movimiento deben existir</li>
+                        <li>datos_personalizados debe ser JSON válido o vacío</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="archivoMovimientosCSV" class="form-label">Seleccionar archivo CSV</label>
+                    <input type="file" class="form-control" id="archivoMovimientosCSV" accept=".csv">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-info" onclick="importarMovimientosCSV()">
+                    <i class="bi bi-upload"></i> Importar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
