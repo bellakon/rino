@@ -20,7 +20,7 @@
             </div>
             <div class="card-body">
                 <form method="get" action="{{ url_for('trabajadores.index') }}" class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label for="num_trabajador" class="form-label">Número de Trabajador</label>
                         <input type="number" 
                                class="form-control" 
@@ -29,7 +29,7 @@
                                value="{{ num_trabajador_filter or '' }}"
                                placeholder="Ej: 12345">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label for="tipoPlaza" class="form-label">Tipo de Plaza</label>
                         <input type="text" 
                                class="form-control" 
@@ -38,7 +38,26 @@
                                value="{{ tipoPlaza_filter }}"
                                placeholder="Ej: Base, Confianza">
                     </div>
-                    <div class="col-md-4 d-flex align-items-end">
+                    <div class="col-md-3">
+                        <label for="departamento_id" class="form-label">Departamento</label>
+                        <select class="form-select" id="departamento_id" name="departamento_id">
+                            <option value="">Todos los departamentos</option>
+                            {% for dept in departamentos %}
+                            <option value="{{ dept.id }}" {% if departamento_id_filter == dept.id %}selected{% endif %}>
+                                {{ dept.nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="orden_por" class="form-label">Ordenar por</label>
+                        <select class="form-select" id="orden_por" name="orden_por">
+                            <option value="num_trabajador" {% if orden_por_filter == 'num_trabajador' or not orden_por_filter %}selected{% endif %}>Número</option>
+                            <option value="nombre" {% if orden_por_filter == 'nombre' %}selected{% endif %}>Nombre</option>
+                            <option value="departamento" {% if orden_por_filter == 'departamento' %}selected{% endif %}>Departamento</option>
+                        </select>
+                    </div>
+                    <div class="col-12 d-flex align-items-end">
                         <button type="submit" class="btn btn-primary me-2">
                             <i class="bi bi-search"></i> Buscar
                         </button>
@@ -89,7 +108,11 @@
                             <tr>
                                 <td><strong>{{ trabajador.num_trabajador }}</strong></td>
                                 <td>{{ trabajador.nombre }}</td>
-                                <td>{{ trabajador.departamento or '-' }}</td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        {{ trabajador.departamento_nombre or 'SIN ASIGNAR' }}
+                                    </span>
+                                </td>
                                 <td>{{ trabajador.tipoPlaza or '-' }}</td>
                                 <td>
                                     {% if trabajador.activo %}
@@ -100,6 +123,12 @@
                                 </td>
                                 <td>
                                     <div class="btn-group" role="group">
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-primary" 
+                                                onclick="mostrarModalCambiarDepartamento({{ trabajador.id }}, '{{ trabajador.nombre }}', {{ trabajador.departamento_id or 1 }})"
+                                                title="Cambiar departamento">
+                                            <i class="bi bi-diagram-3"></i>
+                                        </button>
                                         <button type="button" 
                                                 class="btn btn-sm btn-warning" 
                                                 onclick="editarTrabajador({{ trabajador.id }})"
@@ -133,7 +162,7 @@
                         <!-- Anterior -->
                         <li class="page-item {% if not has_prev %}disabled{% endif %}">
                             <a class="page-link" 
-                               href="{% if has_prev %}{{ url_for('trabajadores.index', page=page-1, num_trabajador=num_trabajador_filter, tipoPlaza=tipoPlaza_filter) }}{% else %}#{% endif %}">
+                               href="{% if has_prev %}{{ url_for('trabajadores.index', page=page-1, num_trabajador=num_trabajador_filter, tipoPlaza=tipoPlaza_filter, departamento_id=departamento_id_filter, orden_por=orden_por_filter) }}{% else %}#{% endif %}">
                                 <i class="bi bi-chevron-left"></i> Anterior
                             </a>
                         </li>
@@ -144,7 +173,7 @@
                         
                         {% if start_page > 1 %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('trabajadores.index', page=1, num_trabajador=num_trabajador_filter, tipoPlaza=tipoPlaza_filter) }}">1</a>
+                                <a class="page-link" href="{{ url_for('trabajadores.index', page=1, num_trabajador=num_trabajador_filter, tipoPlaza=tipoPlaza_filter, departamento_id=departamento_id_filter, orden_por=orden_por_filter) }}">1</a>
                             </li>
                             {% if start_page > 2 %}
                                 <li class="page-item disabled"><span class="page-link">...</span></li>
@@ -153,7 +182,7 @@
                         
                         {% for p in range(start_page, end_page + 1) %}
                             <li class="page-item {% if p == page %}active{% endif %}">
-                                <a class="page-link" href="{{ url_for('trabajadores.index', page=p, num_trabajador=num_trabajador_filter, tipoPlaza=tipoPlaza_filter) }}">{{ p }}</a>
+                                <a class="page-link" href="{{ url_for('trabajadores.index', page=p, num_trabajador=num_trabajador_filter, tipoPlaza=tipoPlaza_filter, departamento_id=departamento_id_filter, orden_por=orden_por_filter) }}">{{ p }}</a>
                             </li>
                         {% endfor %}
                         
@@ -162,14 +191,14 @@
                                 <li class="page-item disabled"><span class="page-link">...</span></li>
                             {% endif %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('trabajadores.index', page=total_pages, num_trabajador=num_trabajador_filter, tipoPlaza=tipoPlaza_filter) }}">{{ total_pages }}</a>
+                                <a class="page-link" href="{{ url_for('trabajadores.index', page=total_pages, num_trabajador=num_trabajador_filter, tipoPlaza=tipoPlaza_filter, departamento_id=departamento_id_filter, orden_por=orden_por_filter) }}">{{ total_pages }}</a>
                             </li>
                         {% endif %}
                         
                         <!-- Siguiente -->
                         <li class="page-item {% if not has_next %}disabled{% endif %}">
                             <a class="page-link" 
-                               href="{% if has_next %}{{ url_for('trabajadores.index', page=page+1, num_trabajador=num_trabajador_filter, tipoPlaza=tipoPlaza_filter) }}{% else %}#{% endif %}">
+                               href="{% if has_next %}{{ url_for('trabajadores.index', page=page+1, num_trabajador=num_trabajador_filter, tipoPlaza=tipoPlaza_filter, departamento_id=departamento_id_filter, orden_por=orden_por_filter) }}{% else %}#{% endif %}">
                                 Siguiente <i class="bi bi-chevron-right"></i>
                             </a>
                         </li>
@@ -204,6 +233,9 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Cambiar Departamento -->
+{% include 'trabajadores/modal_cambiar_departamento.html' %}
 
 <!-- Modal Ver Checadores -->
 {% include 'trabajadores/modal_checadores.html' %}
@@ -328,6 +360,73 @@ function verChecadores(numTrabajador) {
         .catch(error => {
             listado.innerHTML = `<div class="alert alert-danger">Error al consultar: ${error}</div>`;
         });
+}
+
+// Modal para cambiar departamento
+let modalCambiarDepartamento;
+let departamentosDisponibles = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    modalCambiarDepartamento = new bootstrap.Modal(document.getElementById('modalCambiarDepartamento'));
+    cargarDepartamentos();
+});
+
+function cargarDepartamentos() {
+    fetch('/trabajadores/departamentos-activos')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Error al cargar departamentos:', data.error);
+                return;
+            }
+            departamentosDisponibles = data.departamentos;
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+function mostrarModalCambiarDepartamento(trabajadorId, nombreTrabajador, departamentoActualId) {
+    document.getElementById('cambiarDepartamentoTrabajadorId').value = trabajadorId;
+    document.getElementById('cambiarDepartamentoNombre').textContent = nombreTrabajador;
+    
+    // Llenar select de departamentos
+    const select = document.getElementById('selectDepartamento');
+    select.innerHTML = departamentosDisponibles.map(dept => 
+        `<option value="${dept.id}" ${dept.id == departamentoActualId ? 'selected' : ''}>
+            ${dept.nombre} ${dept.nomenclatura ? '(' + dept.nomenclatura + ')' : ''}
+        </option>`
+    ).join('');
+    
+    modalCambiarDepartamento.show();
+}
+
+function cambiarDepartamento() {
+    const trabajadorId = document.getElementById('cambiarDepartamentoTrabajadorId').value;
+    const departamentoId = document.getElementById('selectDepartamento').value;
+    
+    fetch('/trabajadores/cambiar-departamento', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            trabajador_id: trabajadorId,
+            departamento_id: departamentoId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+            return;
+        }
+        
+        alert(data.mensaje);
+        modalCambiarDepartamento.hide();
+        window.location.reload();
+    })
+    .catch(error => {
+        alert('Error al cambiar departamento: ' + error);
+    });
 }
 </script>
 {% endblock %}

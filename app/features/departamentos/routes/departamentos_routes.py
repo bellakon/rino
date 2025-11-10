@@ -17,6 +17,7 @@ from app.features.departamentos.models.departamento import Departamento
 departamentos_bp = Blueprint(
     'departamentos',
     __name__,
+    url_prefix='/departamentos',
     template_folder='../templates'
 )
 

@@ -6,7 +6,7 @@ import csv
 import io
 from app.core.database.query_executor import QueryExecutor
 from app.core.database.connection import db_connection
-from app.shared.models.departamento import Departamento
+from app.features.departamentos.models.departamento import Departamento
 from app.features.departamentos.services.crear_departamento_use_case import crear_departamento_use_case
 
 

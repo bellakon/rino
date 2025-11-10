@@ -98,6 +98,35 @@ class QueryBuilder:
         
         return self
     
+    def add_search(self, columns, search_term):
+        """
+        Agrega búsqueda tipo LIKE en múltiples columnas (con OR)
+        
+        Args:
+            columns (list): Lista de columnas donde buscar
+            search_term (str): Término a buscar
+            
+        Returns:
+            self: Para encadenamiento
+        """
+        if search_term and columns:
+            # Agregar WHERE o AND según corresponda
+            if self.has_where:
+                self.query += " AND"
+            else:
+                self.query += " WHERE"
+                self.has_where = True
+            
+            # Construir condiciones OR para cada columna
+            conditions = []
+            for column in columns:
+                conditions.append(f"{column} LIKE %s")
+                self.params.append(f"%{search_term}%")
+            
+            self.query += f" ({' OR '.join(conditions)})"
+        
+        return self
+    
     def build(self):
         """
         Construye la query final con sus parámetros

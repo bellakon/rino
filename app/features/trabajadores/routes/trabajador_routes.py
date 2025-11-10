@@ -8,6 +8,7 @@ from app.features.trabajadores.services.importar_trabajadores_use_case import im
 from app.features.trabajadores.services.crear_trabajador_use_case import crear_trabajador_use_case
 from app.features.trabajadores.services.actualizar_trabajador_use_case import actualizar_trabajador_use_case
 from app.features.trabajadores.services.eliminar_trabajador_use_case import eliminar_trabajador_use_case
+from app.features.trabajadores.services.cambiar_departamento_trabajador_use_case import cambiar_departamento_trabajador_use_case
 from app.features.checadores.services.consultar_checadores_trabajador_use_case import consultar_checadores_trabajador_use_case
 from app.core.database.query_executor import query_executor
 import math
@@ -23,6 +24,8 @@ def index():
     # Obtener parámetros de query string
     num_trabajador = request.args.get('num_trabajador', type=int)
     tipoPlaza = request.args.get('tipoPlaza', type=str)
+    departamento_id = request.args.get('departamento_id', type=int)
+    orden_por = request.args.get('orden_por', type=str)
     page = request.args.get('page', 1, type=int)
     per_page = 50  # Registros por página
     
@@ -30,6 +33,8 @@ def index():
     resultado, error = obtener_trabajadores_use_case.ejecutar(
         num_trabajador=num_trabajador,
         tipoPlaza=tipoPlaza,
+        departamento_id=departamento_id,
+        orden_por=orden_por,
         page=page,
         per_page=per_page
     )
@@ -43,6 +48,15 @@ def index():
     has_prev = resultado['page'] > 1
     has_next = resultado['page'] < total_pages
     
+    # Obtener lista de departamentos para el filtro
+    query_departamentos = """
+        SELECT id, nombre 
+        FROM departamentos 
+        WHERE activo = 1 
+        ORDER BY nombre ASC
+    """
+    departamentos, _ = query_executor.ejecutar(query_departamentos)
+    
     return render_template(
         'trabajadores/index.html',
         trabajadores=resultado['trabajadores'],
@@ -53,7 +67,10 @@ def index():
         has_prev=has_prev,
         has_next=has_next,
         num_trabajador_filter=num_trabajador,
-        tipoPlaza_filter=tipoPlaza or ''
+        tipoPlaza_filter=tipoPlaza or '',
+        departamento_id_filter=departamento_id,
+        orden_por_filter=orden_por or '',
+        departamentos=departamentos or []
     )
 
 
@@ -219,3 +236,46 @@ def eliminar(id):
         flash('Trabajador eliminado exitosamente', 'success')
     
     return redirect(url_for('trabajadores.index'))
+
+
+@trabajadores_bp.route('/cambiar-departamento', methods=['POST'])
+def cambiar_departamento():
+    """Cambiar departamento de un trabajador"""
+    try:
+        data = request.get_json()
+        trabajador_id = data.get('trabajador_id')
+        departamento_id = data.get('departamento_id')
+        
+        if not trabajador_id:
+            return jsonify({'error': 'trabajador_id es requerido'}), 400
+        
+        success, error = cambiar_departamento_trabajador_use_case.ejecutar(trabajador_id, departamento_id)
+        
+        if error:
+            return jsonify({'error': error}), 400
+        
+        return jsonify({
+            'success': True,
+            'mensaje': 'Departamento actualizado exitosamente'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@trabajadores_bp.route('/departamentos-activos')
+def departamentos_activos():
+    """Obtener lista de departamentos activos para el selector"""
+    query = """
+        SELECT id, num_departamento, nombre, nomenclatura
+        FROM departamentos
+        WHERE activo = 1
+        ORDER BY nombre ASC
+    """
+    resultado, error = query_executor.ejecutar(query)
+    
+    if error:
+        return jsonify({'error': error}), 500
+    
+    return jsonify({'departamentos': resultado if resultado else []})
+

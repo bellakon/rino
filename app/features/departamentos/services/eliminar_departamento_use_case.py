@@ -23,6 +23,10 @@ class EliminarDepartamentoUseCase:
             tuple: (success, error)
         """
         try:
+            # No permitir eliminar el departamento "SIN ASIGNAR" (id=1)
+            if id_departamento == 1:
+                return False, "No se puede eliminar el departamento 'SIN ASIGNAR'"
+            
             # Verificar si hay trabajadores asignados
             query_trabajadores = """
                 SELECT COUNT(*) as total 
@@ -34,8 +38,17 @@ class EliminarDepartamentoUseCase:
             if error:
                 return False, error
             
+            # Si hay trabajadores asignados, reasignarlos al departamento "SIN ASIGNAR" (id=1)
             if resultado and resultado[0]['total'] > 0:
-                return False, f"No se puede eliminar. Hay {resultado[0]['total']} trabajadores asignados a este departamento"
+                query_reasignar = """
+                    UPDATE trabajadores 
+                    SET departamento_id = 1 
+                    WHERE departamento_id = %s
+                """
+                _, error = self.query_executor.ejecutar(query_reasignar, (id_departamento,))
+                
+                if error:
+                    return False, f"Error al reasignar trabajadores: {error}"
             
             # Eliminar
             query = "DELETE FROM departamentos WHERE id = %s"

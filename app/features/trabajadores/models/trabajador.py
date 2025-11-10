@@ -19,6 +19,7 @@ class Trabajador:
     activo: Optional[bool] = True
     movimiento: Optional[str] = None
     id: Optional[int] = None
+    departamento_nombre: Optional[str] = None  # Campo extra del JOIN
     
     def to_dict(self):
         """Convierte a diccionario"""
@@ -27,6 +28,7 @@ class Trabajador:
             'num_trabajador': self.num_trabajador,
             'nombre': self.nombre,
             'departamento_id': self.departamento_id,
+            'departamento_nombre': self.departamento_nombre,
             'tipoPlaza': self.tipoPlaza,
             'ingresoSEPfecha': self.ingresoSEPfecha,
             'captura': self.captura,
@@ -42,6 +44,7 @@ class Trabajador:
             num_trabajador=data.get('num_trabajador'),
             nombre=data.get('nombre'),
             departamento_id=data.get('departamento_id'),
+            departamento_nombre=data.get('departamento_nombre'),
             tipoPlaza=data.get('tipoPlaza'),
             ingresoSEPfecha=data.get('ingresoSEPfecha'),
             captura=data.get('captura'),
