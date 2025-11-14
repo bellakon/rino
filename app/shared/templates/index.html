@@ -83,14 +83,28 @@
         </div>
     </div>
 
+    <!-- Tarjeta: Bitácora -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-journal-check display-1 text-success"></i>
+                <h5 class="card-title mt-3">Bitácora</h5>
+                <p class="card-text">Procesar asistencias y calcular incidencias</p>
+                <a href="{{ url_for('bitacora.index') }}" class="btn btn-success">
+                    <i class="bi bi-gear-fill"></i> Procesar Bitácora
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- Tarjeta: Asistencias -->
     <div class="col-md-6 col-lg-4 mb-4">
         <div class="card h-100 shadow-sm">
             <div class="card-body text-center">
-                <i class="bi bi-clock-history display-1 text-success"></i>
+                <i class="bi bi-clock-history display-1 text-warning"></i>
                 <h5 class="card-title mt-3">Asistencias</h5>
                 <p class="card-text">Ver registros de asistencias almacenados</p>
-                <a href="{{ url_for('asistencias.index') }}" class="btn btn-success">
+                <a href="{{ url_for('asistencias.index') }}" class="btn btn-warning">
                     <i class="bi bi-eye"></i> Ver Asistencias
                 </a>
             </div>

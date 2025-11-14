@@ -36,6 +36,7 @@ def create_app():
             os.path.join(base_dir, 'features/departamentos/templates'),
             os.path.join(base_dir, 'features/horarios/templates'),
             os.path.join(base_dir, 'features/movimientos/templates'),
+            os.path.join(base_dir, 'features/bitacora/templates'),
         ])
     ])
     app.jinja_loader = loader
@@ -48,6 +49,7 @@ def create_app():
     from app.features.departamentos.routes.departamentos_routes import departamentos_bp
     from app.features.horarios.routes.horarios_routes import horarios_bp
     from app.features.movimientos.routes.movimientos_routes import movimientos_bp
+    from app.features.bitacora.routes.bitacora_routes import bitacora_bp
     
     app.register_blueprint(checadores_bp)
     app.register_blueprint(asistencias_bp)
@@ -56,6 +58,7 @@ def create_app():
     app.register_blueprint(departamentos_bp)
     app.register_blueprint(horarios_bp)
     app.register_blueprint(movimientos_bp)
+    app.register_blueprint(bitacora_bp)
     
     # Ruta principal
     @app.route('/')

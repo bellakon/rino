@@ -1,0 +1,515 @@
+{% extends "base.html" %}
+
+{% block title %}Bitácora - RINO{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-journal-check"></i> Procesamiento de Bitácora</h2>
+            <p class="text-muted">Genera bitácora de asistencias procesando checadas vs horarios asignados</p>
+        </div>
+    </div>
+
+    <!-- Wizard de Steps -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <!-- Nav Tabs -->
+            <ul class="nav nav-pills mb-4" id="bitacoraTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="step1-tab" data-bs-toggle="pill" 
+                            data-bs-target="#step1" type="button" role="tab">
+                        <i class="bi bi-person-check"></i> 1. Seleccionar Trabajador
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link disabled" id="step2-tab" data-bs-toggle="pill" 
+                            data-bs-target="#step2" type="button" role="tab">
+                        <i class="bi bi-calendar-range"></i> 2. Rango de Fechas
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link disabled" id="step3-tab" data-bs-toggle="pill" 
+                            data-bs-target="#step3" type="button" role="tab">
+                        <i class="bi bi-play-circle"></i> 3. Procesar
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="bitacoraTabContent">
+                <!-- Step 1: Seleccionar Trabajador -->
+                <div class="tab-pane fade show active" id="step1" role="tabpanel">
+                    <h5 class="mb-3">Selecciona el trabajador</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="selectTrabajador" class="form-label">Trabajador</label>
+                                <select class="form-select" id="selectTrabajador" required>
+                                    <option value="">Cargando trabajadores...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-primary" onclick="irAStep2()">
+                            Siguiente <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Rango de Fechas -->
+                <div class="tab-pane fade" id="step2" role="tabpanel">
+                    <h5 class="mb-3">Define el rango de fechas</h5>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="fechaInicio" class="form-label">Fecha Inicio</label>
+                                <input type="date" class="form-control" id="fechaInicio" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="fechaFin" class="form-label">Fecha Fin</label>
+                                <input type="date" class="form-control" id="fechaFin" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <button type="button" class="btn btn-info" onclick="verificarHorario()">
+                            <i class="bi bi-clock"></i> Verificar Horario Asignado
+                        </button>
+                    </div>
+
+                    <!-- Info de Horario -->
+                    <div id="infoHorario" class="alert alert-info d-none">
+                        <h6><i class="bi bi-info-circle"></i> Horario Asignado:</h6>
+                        <div id="detalleHorario"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-secondary" onclick="irAStep1()">
+                            <i class="bi bi-arrow-left"></i> Anterior
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="irAStep3()">
+                            Siguiente <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Procesar -->
+                <div class="tab-pane fade" id="step3" role="tabpanel">
+                    <h5 class="mb-3">Resumen y Procesamiento</h5>
+                    
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title">Datos a procesar:</h6>
+                            <ul class="mb-0">
+                                <li><strong>Trabajador:</strong> <span id="resumenTrabajador"></span></li>
+                                <li><strong>Periodo:</strong> <span id="resumenPeriodo"></span></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        <strong>Nota:</strong> Este proceso comparará las checadas con los horarios asignados 
+                        y calculará las incidencias automáticamente según las reglas configuradas.
+                    </div>
+
+                    <div class="mb-4">
+                        <button type="button" class="btn btn-success btn-lg" onclick="procesarBitacora()" id="btnProcesar">
+                            <i class="bi bi-gear-fill"></i> Procesar Bitácora
+                        </button>
+                    </div>
+
+                    <!-- Resultados -->
+                    <div id="resultados" class="d-none">
+                        <h5 class="mb-3">Resultados del Procesamiento</h5>
+                        <div id="mensajeResultado" class="alert"></div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover" id="tablaResultados">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Departamento</th>
+                                        <th>Horario</th>
+                                        <th>Código</th>
+                                        <th>Movimiento</th>
+                                        <th>Checada 1</th>
+                                        <th>Checada 2</th>
+                                        <th>Checada 3</th>
+                                        <th>Checada 4</th>
+                                        <th>Minutos Retardo</th>
+                                        <th>Horas Trabajadas</th>
+                                        <th>Descripción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyResultados"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-secondary" onclick="irAStep2()">
+                            <i class="bi bi-arrow-left"></i> Anterior
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="generarPDF()" id="btnGenerarPDF" style="display: none;">
+                            <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let trabajadorSeleccionado = null;
+
+// Cargar trabajadores al inicio
+document.addEventListener('DOMContentLoaded', function() {
+    cargarTrabajadores();
+});
+
+async function cargarTrabajadores() {
+    try {
+        console.log('[BITACORA] Iniciando carga de trabajadores');
+        const response = await fetch('/trabajadores/listar');
+        console.log('[BITACORA] Response status:', response.status);
+        
+        const data = await response.json();
+        console.log('[BITACORA] Response data:', data);
+        
+        const select = document.getElementById('selectTrabajador');
+        select.innerHTML = '<option value="">Selecciona un trabajador...</option>';
+        
+        // La respuesta puede ser { trabajadores: [...] } o { success: true, trabajadores: [...] }
+        const trabajadores = data.trabajadores || data;
+        
+        if (trabajadores && Array.isArray(trabajadores)) {
+            console.log('[BITACORA] Trabajadores encontrados:', trabajadores.length);
+            trabajadores.forEach(t => {
+                const option = document.createElement('option');
+                option.value = t.num_trabajador;
+                option.textContent = `${t.num_trabajador} - ${t.nombre || 'Sin nombre'}`;
+                option.dataset.nombre = t.nombre || 'Sin nombre';
+                select.appendChild(option);
+            });
+            console.log('[BITACORA] Trabajadores cargados exitosamente');
+        } else {
+            console.warn('[BITACORA] No se encontraron trabajadores en la respuesta:', data);
+        }
+    } catch (error) {
+        console.error('[BITACORA] Error al cargar trabajadores:', error);
+        mostrarToast('Error al cargar trabajadores', 'error');
+    }
+}
+
+function irAStep1() {
+    document.getElementById('step1-tab').click();
+}
+
+function irAStep2() {
+    const select = document.getElementById('selectTrabajador');
+    if (!select.value) {
+        mostrarToast('Selecciona un trabajador primero', 'warning');
+        return;
+    }
+    
+    trabajadorSeleccionado = {
+        num_trabajador: select.value,
+        nombre: select.options[select.selectedIndex].dataset.nombre
+    };
+    
+    document.getElementById('step2-tab').classList.remove('disabled');
+    document.getElementById('step2-tab').click();
+}
+
+function irAStep3() {
+    const fechaInicio = document.getElementById('fechaInicio').value;
+    const fechaFin = document.getElementById('fechaFin').value;
+    
+    if (!fechaInicio || !fechaFin) {
+        mostrarToast('Define el rango de fechas', 'warning');
+        return;
+    }
+    
+    if (fechaInicio > fechaFin) {
+        mostrarToast('La fecha inicio no puede ser mayor a la fecha fin', 'warning');
+        return;
+    }
+    
+    // Actualizar resumen
+    document.getElementById('resumenTrabajador').textContent = 
+        `${trabajadorSeleccionado.num_trabajador} - ${trabajadorSeleccionado.nombre}`;
+    document.getElementById('resumenPeriodo').textContent = 
+        `${fechaInicio} al ${fechaFin}`;
+    
+    document.getElementById('step3-tab').classList.remove('disabled');
+    document.getElementById('step3-tab').click();
+}
+
+async function verificarHorario() {
+    const fechaInicio = document.getElementById('fechaInicio').value;
+    const fechaFin = document.getElementById('fechaFin').value;
+    
+    if (!fechaInicio || !fechaFin) {
+        mostrarToast('Define primero el rango de fechas', 'warning');
+        return;
+    }
+    
+    try {
+        console.log('[BITACORA] Verificando horario para trabajador:', trabajadorSeleccionado.num_trabajador);
+        const response = await fetch('/bitacora/horario', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                num_trabajador: trabajadorSeleccionado.num_trabajador,
+                fecha_inicio: fechaInicio,
+                fecha_fin: fechaFin
+            })
+        });
+        
+        console.log('[BITACORA] Response status:', response.status);
+        const data = await response.json();
+        console.log('[BITACORA] Horario response:', data);
+        
+        if (data.success) {
+            const horario = data.horario;
+            const infoHorario = document.getElementById('infoHorario');
+            const detalleHorario = document.getElementById('detalleHorario');
+            
+            console.log('[BITACORA] Horario recibido:', horario);
+            
+            let html = '<ul class="mb-0">';
+            html += `<li><strong>Turno:</strong> ${horario.horario_nombre} (${horario.turno_nomenclatura || 'N/A'})</li>`;
+            html += `<li><strong>Fecha Inicio:</strong> ${horario.fecha_inicio_asignacion}</li>`;
+            html += `<li><strong>Fecha Fin:</strong> ${horario.fecha_fin_asignacion || 'Vigente'}</li>`;
+            html += `<li><strong>Horarios por día:</strong></li>`;
+            html += '<ul>';
+            
+            const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+            for (let i = 0; i < 7; i++) {
+                if (horario.horarios_por_dia && horario.horarios_por_dia[i]) {
+                    html += `<li><strong>${diasSemana[i]}:</strong> ${horario.horarios_por_dia[i]}</li>`;
+                }
+            }
+            
+            html += '</ul></ul>';
+            
+            detalleHorario.innerHTML = html;
+            infoHorario.classList.remove('d-none');
+            console.log('[BITACORA] Horario mostrado exitosamente');
+        } else {
+            console.error('[BITACORA] Error en horario:', data.message);
+            mostrarToast(data.message, 'error');
+        }
+    } catch (error) {
+        console.error('[BITACORA] Error al verificar horario:', error);
+        mostrarToast('Error al verificar horario', 'error');
+    }
+}
+
+async function procesarBitacora() {
+    const btnProcesar = document.getElementById('btnProcesar');
+    btnProcesar.disabled = true;
+    btnProcesar.innerHTML = '<i class="bi bi-hourglass-split"></i> Procesando...';
+    
+    try {
+        console.log('[BITACORA] Iniciando procesamiento de bitácora');
+        const response = await fetch('/bitacora/procesar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                num_trabajador: trabajadorSeleccionado.num_trabajador,
+                fecha_inicio: document.getElementById('fechaInicio').value,
+                fecha_fin: document.getElementById('fechaFin').value
+            })
+        });
+        
+        console.log('[BITACORA] Response status:', response.status);
+        const data = await response.json();
+        console.log('[BITACORA] Procesar response:', data);
+        
+        if (data.success) {
+            mostrarResultados(data.registros, data.message, data.stats);
+            mostrarToast(data.message, 'success');
+            console.log('[BITACORA] Bitácora procesada exitosamente', data.stats);
+        } else {
+            console.error('[BITACORA] Error en procesamiento:', data.message);
+            mostrarToast(data.message, 'error');
+        }
+    } catch (error) {
+        console.error('[BITACORA] Error al procesar bitácora:', error);
+        mostrarToast('Error al procesar bitácora', 'error');
+    } finally {
+        btnProcesar.disabled = false;
+        btnProcesar.innerHTML = '<i class="bi bi-gear-fill"></i> Procesar Bitácora';
+    }
+}
+
+function mostrarResultados(registros, mensaje, stats) {
+    const mensajeResultado = document.getElementById('mensajeResultado');
+    mensajeResultado.className = 'alert alert-success';
+    
+    // Construir mensaje con estadísticas
+    let mensajeHtml = `<strong>${mensaje}</strong>`;
+    if (stats) {
+        mensajeHtml += '<br><small class="mt-2 d-block">';
+        if (stats.insertados > 0) {
+            mensajeHtml += `<i class="bi bi-plus-circle text-success"></i> ${stats.insertados} nuevos | `;
+        }
+        if (stats.actualizados > 0) {
+            mensajeHtml += `<i class="bi bi-arrow-repeat text-info"></i> ${stats.actualizados} actualizados | `;
+        }
+        if (stats.errores > 0) {
+            mensajeHtml += `<i class="bi bi-exclamation-triangle text-warning"></i> ${stats.errores} errores | `;
+        }
+        mensajeHtml += `<i class="bi bi-calendar-check"></i> Total: ${registros.length} días procesados`;
+        mensajeHtml += '</small>';
+    }
+    mensajeResultado.innerHTML = mensajeHtml;
+    
+    const tbody = document.getElementById('tbodyResultados');
+    tbody.innerHTML = '';
+    
+    registros.forEach(reg => {
+        const tr = document.createElement('tr');
+        
+        // Mostrar solo el tipo de movimiento (sin el código)
+        let movimientoTexto = '-';
+        if (reg.tipo_movimiento && (reg.codigo_incidencia === 'J' || reg.codigo_incidencia === 'L')) {
+            movimientoTexto = reg.tipo_movimiento;
+        }
+        
+        tr.innerHTML = `
+            <td>${reg.fecha}</td>
+            <td><small>${reg.departamento || '-'}</small></td>
+            <td><small>${reg.horario_texto || 'Sin horario'}</small></td>
+            <td>${obtenerBadgeCodigo(reg.codigo_incidencia)}</td>
+            <td><small>${movimientoTexto}</small></td>
+            <td>${reg.checada1 || '-'}</td>
+            <td>${reg.checada2 || '-'}</td>
+            <td>${reg.checada3 || '-'}</td>
+            <td>${reg.checada4 || '-'}</td>
+            <td>${reg.minutos_retardo || 0}</td>
+            <td>${reg.horas_trabajadas ? reg.horas_trabajadas.toFixed(2) : '0.00'}</td>
+            <td><small>${reg.descripcion_incidencia || ''}</small></td>
+        `;
+        tbody.appendChild(tr);
+    });
+    
+    // Guardar registros para PDF
+    registrosProcesados = registros;
+    
+    // Obtener datos del trabajador seleccionado
+    const selectTrabajador = document.getElementById('selectTrabajador');
+    const selectedOption = selectTrabajador.options[selectTrabajador.selectedIndex];
+    const nombreTrabajador = selectedOption ? selectedOption.text : '';
+    const numTrabajador = document.getElementById('selectTrabajador').value;
+    const fechaInicio = document.getElementById('fechaInicio').value;
+    const fechaFin = document.getElementById('fechaFin').value;
+    
+    datosGeneralesPDF = {
+        nombre_trabajador: nombreTrabajador,
+        num_trabajador: numTrabajador,
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin
+    };
+    
+    // Mostrar botón de PDF
+    document.getElementById('btnGenerarPDF').style.display = 'inline-block';
+    
+    document.getElementById('resultados').classList.remove('d-none');
+}
+
+function obtenerBadgeCodigo(codigo) {
+    const badges = {
+        'A': '<span class="badge bg-success">A</span>',
+        'F': '<span class="badge bg-danger">F</span>',
+        'R+': '<span class="badge bg-warning text-dark">R+</span>',
+        'R-': '<span class="badge bg-warning text-dark">R-</span>',
+        'O': '<span class="badge bg-secondary">O</span>',
+        'ST': '<span class="badge bg-info text-dark">ST</span>',
+        'J': '<span class="badge bg-primary">J</span>',
+        'L': '<span class="badge bg-primary">L</span>'
+    };
+    return badges[codigo] || `<span class="badge bg-secondary">${codigo}</span>`;
+}
+
+// Variable global para almacenar los registros procesados
+let registrosProcesados = [];
+let datosGeneralesPDF = {};
+
+async function generarPDF() {
+    console.log('[BITACORA] Generando PDF...');
+    
+    if (!registrosProcesados || registrosProcesados.length === 0) {
+        mostrarToast('No hay registros para generar PDF', 'warning');
+        return;
+    }
+    
+    const btnGenerarPDF = document.getElementById('btnGenerarPDF');
+    btnGenerarPDF.disabled = true;
+    btnGenerarPDF.innerHTML = '<i class="bi bi-hourglass-split"></i> Generando PDF...';
+    
+    try {
+        const response = await fetch('/bitacora/generar-pdf', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                registros: registrosProcesados,
+                nombre_trabajador: datosGeneralesPDF.nombre_trabajador,
+                num_trabajador: datosGeneralesPDF.num_trabajador,
+                fecha_inicio: datosGeneralesPDF.fecha_inicio,
+                fecha_fin: datosGeneralesPDF.fecha_fin
+            })
+        });
+        
+        if (response.ok) {
+            // Descargar PDF
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bitacora_${datosGeneralesPDF.num_trabajador}_${datosGeneralesPDF.fecha_inicio}_${datosGeneralesPDF.fecha_fin}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            mostrarToast('PDF generado exitosamente', 'success');
+            console.log('[BITACORA] PDF descargado exitosamente');
+        } else {
+            const data = await response.json();
+            mostrarToast(data.message || 'Error al generar PDF', 'error');
+        }
+    } catch (error) {
+        console.error('[BITACORA] Error al generar PDF:', error);
+        mostrarToast('Error al generar PDF', 'error');
+    } finally {
+        btnGenerarPDF.disabled = false;
+        btnGenerarPDF.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> Descargar PDF';
+    }
+}
+
+function mostrarToast(mensaje, tipo) {
+    // Implementación simple de notificación
+    const alertClass = {
+        'success': 'alert-success',
+        'error': 'alert-danger',
+        'warning': 'alert-warning',
+        'info': 'alert-info'
+    }[tipo] || 'alert-info';
+    
+    alert(mensaje); // Simplificado, puedes usar toast library si prefieres
+}
+</script>
+{% endblock %}
