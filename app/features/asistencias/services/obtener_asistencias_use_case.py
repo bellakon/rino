@@ -9,9 +9,10 @@ from app.features.asistencias.models import Asistencia
 class ObtenerAsistenciasUseCase:
     """Obtiene asistencias de la base de datos y las convierte a modelos"""
     
-    def ejecutar(self, num_trabajador=None, checador=None, fecha_inicio=None, fecha_fin=None, page=1, per_page=50):
+    def ejecutar(self, num_trabajador=None, checador=None, fecha_inicio=None, fecha_fin=None, 
+                 page=1, per_page=50, order_by='id', order_dir='desc'):
         """
-        Ejecuta SELECT con filtros y paginación, convierte a modelos Asistencia
+        Ejecuta SELECT con filtros, ordenación y paginación, convierte a modelos Asistencia
         
         Args:
             num_trabajador: Filtro opcional por número de trabajador
@@ -20,6 +21,8 @@ class ObtenerAsistenciasUseCase:
             fecha_fin: Filtro opcional por fecha final (YYYY-MM-DD)
             page: Número de página (default: 1)
             per_page: Registros por página (default: 50)
+            order_by: Campo por el cual ordenar (default: 'id')
+            order_dir: Dirección de ordenación 'asc' o 'desc' (default: 'desc')
         
         Returns:
             tuple: (dict con asistencias, total, page, per_page, error)
@@ -49,6 +52,24 @@ class ObtenerAsistenciasUseCase:
         
         where_sql = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         
+        # Validar y construir ORDER BY
+        columnas_permitidas = {
+            'id': 'id',
+            'num_trabajador': 'num_trabajador',
+            'nombre': 'nombre',
+            'fecha': 'fecha',
+            'hora': 'hora',
+            'checador': 'checador'
+        }
+        
+        order_column = columnas_permitidas.get(order_by, 'id')
+        order_direction = 'ASC' if order_dir == 'asc' else 'DESC'
+        order_sql = f"ORDER BY {order_column} {order_direction}"
+        
+        # Si se ordena por algo diferente a fecha/hora, agregar fecha DESC, hora DESC como secundario
+        if order_by not in ['fecha', 'hora']:
+            order_sql += ", fecha DESC, hora DESC"
+        
         # Obtener total de registros
         count_query = f"SELECT COUNT(*) as total FROM asistencias{where_sql}"
         count_result, error = query_executor.ejecutar(count_query, tuple(params) if params else None)
@@ -61,11 +82,11 @@ class ObtenerAsistenciasUseCase:
         # Calcular offset
         offset = (page - 1) * per_page
         
-        # Obtener registros paginados
+        # Obtener registros paginados con ordenación
         query = f"""
             SELECT * FROM asistencias
             {where_sql}
-            ORDER BY fecha DESC, hora DESC
+            {order_sql}
             LIMIT %s OFFSET %s
         """
         params.extend([per_page, offset])

@@ -15,8 +15,11 @@
 <div class="row mb-3">
     <div class="col-12">
         <div class="card shadow">
-            <div class="card-header bg-secondary text-white">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros de Búsqueda</h5>
+                <button type="button" class="btn btn-sm btn-success" onclick="mostrarModalImportar()">
+                    <i class="bi bi-upload"></i> Importar Archivo .res
+                </button>
             </div>
             <div class="card-body">
                 <form method="get" action="{{ url_for('asistencias.index') }}" class="row g-3">
@@ -84,12 +87,114 @@
                     <table class="table table-striped table-hover">
                         <thead class="table-dark">
                             <tr>
-                                <th>ID</th>
-                                <th>Num. Trabajador</th>
-                                <th>Nombre</th>
-                                <th>Fecha</th>
-                                <th>Hora</th>
-                                <th>Checador</th>
+                                <th>
+                                    <a href="{{ url_for('asistencias.index', 
+                                        num_trabajador=num_trabajador_filter or '', 
+                                        checador=checador_filter, 
+                                        fecha_inicio=fecha_inicio_filter, 
+                                        fecha_fin=fecha_fin_filter,
+                                        order_by='id', 
+                                        order_dir='asc' if order_by == 'id' and order_dir == 'asc' else 'desc',
+                                        page=page) }}" 
+                                        class="text-white text-decoration-none">
+                                        ID
+                                        {% if order_by == 'id' %}
+                                            <i class="bi bi-{{ 'sort-down' if order_dir == 'desc' else 'sort-up' }}"></i>
+                                        {% else %}
+                                            <i class="bi bi-arrow-down-up text-muted"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="{{ url_for('asistencias.index', 
+                                        num_trabajador=num_trabajador_filter or '', 
+                                        checador=checador_filter, 
+                                        fecha_inicio=fecha_inicio_filter, 
+                                        fecha_fin=fecha_fin_filter,
+                                        order_by='num_trabajador', 
+                                        order_dir='asc' if order_by == 'num_trabajador' and order_dir == 'asc' else 'desc',
+                                        page=page) }}" 
+                                        class="text-white text-decoration-none">
+                                        Num. Trabajador
+                                        {% if order_by == 'num_trabajador' %}
+                                            <i class="bi bi-{{ 'sort-down' if order_dir == 'desc' else 'sort-up' }}"></i>
+                                        {% else %}
+                                            <i class="bi bi-arrow-down-up text-muted"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="{{ url_for('asistencias.index', 
+                                        num_trabajador=num_trabajador_filter or '', 
+                                        checador=checador_filter, 
+                                        fecha_inicio=fecha_inicio_filter, 
+                                        fecha_fin=fecha_fin_filter,
+                                        order_by='nombre', 
+                                        order_dir='asc' if order_by == 'nombre' and order_dir == 'asc' else 'desc',
+                                        page=page) }}" 
+                                        class="text-white text-decoration-none">
+                                        Nombre
+                                        {% if order_by == 'nombre' %}
+                                            <i class="bi bi-{{ 'sort-down' if order_dir == 'desc' else 'sort-up' }}"></i>
+                                        {% else %}
+                                            <i class="bi bi-arrow-down-up text-muted"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="{{ url_for('asistencias.index', 
+                                        num_trabajador=num_trabajador_filter or '', 
+                                        checador=checador_filter, 
+                                        fecha_inicio=fecha_inicio_filter, 
+                                        fecha_fin=fecha_fin_filter,
+                                        order_by='fecha', 
+                                        order_dir='asc' if order_by == 'fecha' and order_dir == 'asc' else 'desc',
+                                        page=page) }}" 
+                                        class="text-white text-decoration-none">
+                                        Fecha
+                                        {% if order_by == 'fecha' %}
+                                            <i class="bi bi-{{ 'sort-down' if order_dir == 'desc' else 'sort-up' }}"></i>
+                                        {% else %}
+                                            <i class="bi bi-arrow-down-up text-muted"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="{{ url_for('asistencias.index', 
+                                        num_trabajador=num_trabajador_filter or '', 
+                                        checador=checador_filter, 
+                                        fecha_inicio=fecha_inicio_filter, 
+                                        fecha_fin=fecha_fin_filter,
+                                        order_by='hora', 
+                                        order_dir='asc' if order_by == 'hora' and order_dir == 'asc' else 'desc',
+                                        page=page) }}" 
+                                        class="text-white text-decoration-none">
+                                        Hora
+                                        {% if order_by == 'hora' %}
+                                            <i class="bi bi-{{ 'sort-down' if order_dir == 'desc' else 'sort-up' }}"></i>
+                                        {% else %}
+                                            <i class="bi bi-arrow-down-up text-muted"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="{{ url_for('asistencias.index', 
+                                        num_trabajador=num_trabajador_filter or '', 
+                                        checador=checador_filter, 
+                                        fecha_inicio=fecha_inicio_filter, 
+                                        fecha_fin=fecha_fin_filter,
+                                        order_by='checador', 
+                                        order_dir='asc' if order_by == 'checador' and order_dir == 'asc' else 'desc',
+                                        page=page) }}" 
+                                        class="text-white text-decoration-none">
+                                        Checador
+                                        {% if order_by == 'checador' %}
+                                            <i class="bi bi-{{ 'sort-down' if order_dir == 'desc' else 'sort-up' }}"></i>
+                                        {% else %}
+                                            <i class="bi bi-arrow-down-up text-muted"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -114,7 +219,7 @@
                         <!-- Anterior -->
                         <li class="page-item {% if not has_prev %}disabled{% endif %}">
                             <a class="page-link" 
-                               href="{% if has_prev %}{{ url_for('asistencias.index', page=page-1, num_trabajador=num_trabajador_filter, checador=checador_filter, fecha_inicio=fecha_inicio_filter, fecha_fin=fecha_fin_filter) }}{% else %}#{% endif %}">
+                               href="{% if has_prev %}{{ url_for('asistencias.index', page=page-1, num_trabajador=num_trabajador_filter, checador=checador_filter, fecha_inicio=fecha_inicio_filter, fecha_fin=fecha_fin_filter, order_by=order_by, order_dir=order_dir) }}{% else %}#{% endif %}">
                                 <i class="bi bi-chevron-left"></i> Anterior
                             </a>
                         </li>
@@ -125,7 +230,7 @@
                         
                         {% if start_page > 1 %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('asistencias.index', page=1, num_trabajador=num_trabajador_filter, checador=checador_filter, fecha_inicio=fecha_inicio_filter, fecha_fin=fecha_fin_filter) }}">1</a>
+                                <a class="page-link" href="{{ url_for('asistencias.index', page=1, num_trabajador=num_trabajador_filter, checador=checador_filter, fecha_inicio=fecha_inicio_filter, fecha_fin=fecha_fin_filter, order_by=order_by, order_dir=order_dir) }}">1</a>
                             </li>
                             {% if start_page > 2 %}
                                 <li class="page-item disabled"><span class="page-link">...</span></li>
@@ -134,7 +239,7 @@
                         
                         {% for p in range(start_page, end_page + 1) %}
                             <li class="page-item {% if p == page %}active{% endif %}">
-                                <a class="page-link" href="{{ url_for('asistencias.index', page=p, num_trabajador=num_trabajador_filter, checador=checador_filter, fecha_inicio=fecha_inicio_filter, fecha_fin=fecha_fin_filter) }}">{{ p }}</a>
+                                <a class="page-link" href="{{ url_for('asistencias.index', page=p, num_trabajador=num_trabajador_filter, checador=checador_filter, fecha_inicio=fecha_inicio_filter, fecha_fin=fecha_fin_filter, order_by=order_by, order_dir=order_dir) }}">{{ p }}</a>
                             </li>
                         {% endfor %}
                         
@@ -143,14 +248,14 @@
                                 <li class="page-item disabled"><span class="page-link">...</span></li>
                             {% endif %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('asistencias.index', page=total_pages, num_trabajador=num_trabajador_filter, checador=checador_filter, fecha_inicio=fecha_inicio_filter, fecha_fin=fecha_fin_filter) }}">{{ total_pages }}</a>
+                                <a class="page-link" href="{{ url_for('asistencias.index', page=total_pages, num_trabajador=num_trabajador_filter, checador=checador_filter, fecha_inicio=fecha_inicio_filter, fecha_fin=fecha_fin_filter, order_by=order_by, order_dir=order_dir) }}">{{ total_pages }}</a>
                             </li>
                         {% endif %}
                         
                         <!-- Siguiente -->
                         <li class="page-item {% if not has_next %}disabled{% endif %}">
                             <a class="page-link" 
-                               href="{% if has_next %}{{ url_for('asistencias.index', page=page+1, num_trabajador=num_trabajador_filter, checador=checador_filter, fecha_inicio=fecha_inicio_filter, fecha_fin=fecha_fin_filter) }}{% else %}#{% endif %}">
+                               href="{% if has_next %}{{ url_for('asistencias.index', page=page+1, num_trabajador=num_trabajador_filter, checador=checador_filter, fecha_inicio=fecha_inicio_filter, fecha_fin=fecha_fin_filter, order_by=order_by, order_dir=order_dir) }}{% else %}#{% endif %}">
                                 Siguiente <i class="bi bi-chevron-right"></i>
                             </a>
                         </li>
@@ -185,4 +290,706 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de importación -->
+<div class="modal fade" id="modalImportarChecadas" tabindex="-1" aria-labelledby="modalImportarChecadasLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="modalImportarChecadasLabel">
+                    <i class="bi bi-upload"></i> Importar Checadas desde Archivo .res
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" id="btnCerrarImportar"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Selector de archivo -->
+                <div id="selectorArchivo">
+                    <div class="mb-3">
+                        <label for="archivoRes" class="form-label">
+                            <i class="bi bi-file-earmark-arrow-up"></i> Seleccionar archivo .res
+                        </label>
+                        <input type="file" class="form-control" id="archivoRes" accept=".res">
+                        <div class="form-text">
+                            Archivos .res de checadores. Pueden ser archivos grandes (500+ MB)
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="iniciarImportacion()">
+                        <i class="bi bi-cloud-upload"></i> Iniciar Importación
+                    </button>
+                </div>
+                
+                <!-- Progreso de importación (oculto inicialmente) -->
+                <div id="progresoImportacion" style="display: none;">
+                    <h6 id="estadoImportacion">Preparando importación...</h6>
+                    <div class="progress mb-3" style="height: 30px;">
+                        <div 
+                            id="barraProgresoImportacion" 
+                            class="progress-bar progress-bar-striped progress-bar-animated" 
+                            role="progressbar" 
+                            style="width: 0%"
+                            aria-valuenow="0" 
+                            aria-valuemin="0" 
+                            aria-valuemax="100">
+                            0%
+                        </div>
+                    </div>
+                    
+                    <!-- Indicador de fase actual -->
+                    <div class="alert alert-info" id="faseActual" style="display: none;">
+                        <strong>Fase:</strong> <span id="faseTexto">-</span>
+                    </div>
+                    
+                    <!-- Estadísticas en tiempo real -->
+                    <div class="row g-2 mb-3" id="estadisticasImportacion" style="display: none;">
+                        <div class="col-md-3">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <h4 class="text-primary mb-0" id="totalRegistros">-</h4>
+                                    <small class="text-muted">Total</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-success">
+                                <div class="card-body text-center">
+                                    <h4 class="text-success mb-0" id="insertadasImportacion">-</h4>
+                                    <small class="text-muted">Insertadas</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-warning">
+                                <div class="card-body text-center">
+                                    <h4 class="text-warning mb-0" id="duplicadasImportacion">-</h4>
+                                    <small class="text-muted">Duplicadas</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-danger">
+                                <div class="card-body text-center">
+                                    <h4 class="text-danger mb-0" id="invalidasImportacion">-</h4>
+                                    <small class="text-muted">Inválidas</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Mensaje de error -->
+                    <div id="errorImportacion" class="alert alert-danger" style="display: none;"></div>
+                    
+                    <!-- Mensaje de éxito -->
+                    <div id="exitoImportacion" class="alert alert-success" style="display: none;"></div>
+                    
+                    <!-- Preview de registros a insertar (requiere confirmación) -->
+                    <div id="previewConfirmacion" class="mt-3" style="display: none;">
+                        <div class="alert alert-warning">
+                            <h5><i class="bi bi-info-circle"></i> Confirma la importación</h5>
+                            <p class="mb-0">Revisa el resumen y los registros de ejemplo antes de continuar:</p>
+                        </div>
+                        
+                        <!-- Resumen -->
+                        <div class="card border-info mb-3">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0"><i class="bi bi-bar-chart"></i> Resumen del Análisis</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3 text-center">
+                                        <h3 class="text-primary" id="resumenTotal">-</h3>
+                                        <small>Total líneas</small>
+                                    </div>
+                                    <div class="col-md-3 text-center">
+                                        <h3 class="text-success" id="resumenNuevas">-</h3>
+                                        <small>A insertar</small>
+                                    </div>
+                                    <div class="col-md-3 text-center">
+                                        <h3 class="text-warning" id="resumenDuplicadas">-</h3>
+                                        <small>Duplicadas</small>
+                                    </div>
+                                    <div class="col-md-3 text-center">
+                                        <h3 class="text-danger" id="resumenInvalidas">-</h3>
+                                        <small>Inválidas</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Preview de registros nuevos -->
+                        <div class="card border-success mb-3">
+                            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-check-circle"></i> Preview Registros a Insertar 
+                                    <span class="badge bg-light text-dark" id="badgeTotalNuevos">0</span>
+                                </h6>
+                                <small id="infoPaginacionNuevos">Mostrando primeros 50</small>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                    <table class="table table-sm table-striped">
+                                        <thead class="table-dark sticky-top">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Num. Trabajador</th>
+                                                <th>Fecha</th>
+                                                <th>Hora</th>
+                                                <th>Checador</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tablaPreviewNuevos"></tbody>
+                                    </table>
+                                </div>
+                                <!-- Paginación -->
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <button class="btn btn-sm btn-outline-primary" id="btnPrevNuevos" onclick="cambiarPaginaNuevos(-1)" disabled>
+                                        <i class="bi bi-chevron-left"></i> Anterior
+                                    </button>
+                                    <span id="textoPaginaNuevos">Página 1</span>
+                                    <button class="btn btn-sm btn-outline-primary" id="btnNextNuevos" onclick="cambiarPaginaNuevos(1)">
+                                        Siguiente <i class="bi bi-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Análisis de errores agrupados -->
+                        <div class="card border-danger mb-3" id="cardErroresAgrupados" style="display: none;">
+                            <div class="card-header bg-danger text-white">
+                                <h6 class="mb-0"><i class="bi bi-bug"></i> Análisis de Errores Detectados</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="listaErroresAgrupados"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Botones de confirmación -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-secondary" onclick="cancelarImportacion()">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </button>
+                            <button type="button" class="btn btn-success" onclick="confirmarImportacion()">
+                                <i class="bi bi-check-circle"></i> Confirmar e Insertar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview de líneas inválidas -->
+                    <div id="previewInvalidas" class="card border-warning mt-3" style="display: none;">
+                        <div class="card-header bg-warning d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">
+                                <i class="bi bi-exclamation-triangle"></i> Líneas Inválidas 
+                                <span class="badge bg-dark" id="badgeTotalInvalidas">0</span>
+                            </h6>
+                            <small id="infoPaginacionInvalidas">Mostrando primeros 50</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                <table class="table table-sm table-striped">
+                                    <thead class="table-dark sticky-top">
+                                        <tr>
+                                            <th>Línea</th>
+                                            <th>Contenido</th>
+                                            <th>Error</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tablaInvalidas"></tbody>
+                                </table>
+                            </div>
+                            <!-- Paginación -->
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <button class="btn btn-sm btn-outline-warning" id="btnPrevInvalidas" onclick="cambiarPaginaInvalidas(-1)" disabled>
+                                    <i class="bi bi-chevron-left"></i> Anterior
+                                </button>
+                                <span id="textoPaginaInvalidas">Página 1</span>
+                                <button class="btn btn-sm btn-outline-warning" id="btnNextInvalidas" onclick="cambiarPaginaInvalidas(1)">
+                                    Siguiente <i class="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="btnCerrar">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let eventSourceImportacion = null;
+let checadasParaInsertar = null; // Guardar checadas validadas para confirmar
+let datosPreview = null; // Guardar datos completos del preview
+let paginaNuevos = 1;
+let paginaInvalidas = 1;
+const registrosPorPagina = 50;
+
+function mostrarModalImportar() {
+    // Resetear modal
+    checadasParaInsertar = null;
+    document.getElementById('selectorArchivo').style.display = 'block';
+    document.getElementById('progresoImportacion').style.display = 'none';
+    document.getElementById('previewConfirmacion').style.display = 'none';
+    document.getElementById('estadisticasImportacion').style.display = 'none';
+    document.getElementById('faseActual').style.display = 'none';
+    document.getElementById('errorImportacion').style.display = 'none';
+    document.getElementById('exitoImportacion').style.display = 'none';
+    document.getElementById('previewInvalidas').style.display = 'none';
+    document.getElementById('archivoRes').value = '';
+    document.getElementById('btnCerrar').disabled = false;
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('modalImportarChecadas'));
+    modal.show();
+}
+
+async function iniciarImportacion() {
+    const archivoInput = document.getElementById('archivoRes');
+    const archivo = archivoInput.files[0];
+    
+    if (!archivo) {
+        alert('Por favor selecciona un archivo .res');
+        return;
+    }
+    
+    if (!archivo.name.endsWith('.res')) {
+        alert('El archivo debe tener extensión .res');
+        return;
+    }
+    
+    // Ocultar selector, mostrar progreso
+    document.getElementById('selectorArchivo').style.display = 'none';
+    document.getElementById('progresoImportacion').style.display = 'block';
+    document.getElementById('btnCerrar').disabled = true;
+    
+    // Resetear estadísticas
+    document.getElementById('barraProgresoImportacion').style.width = '0%';
+    document.getElementById('barraProgresoImportacion').textContent = '0%';
+    document.getElementById('estadoImportacion').textContent = 'Preparando importación...';
+    document.getElementById('totalRegistros').textContent = '-';
+    document.getElementById('insertadasImportacion').textContent = '-';
+    document.getElementById('duplicadasImportacion').textContent = '-';
+    document.getElementById('invalidasImportacion').textContent = '-';
+    
+    // Preparar FormData
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+    
+    try {
+        // Enviar archivo con fetch
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutos timeout
+        
+        const response = await fetch('/asistencias/importar', {
+            method: 'POST',
+            body: formData,
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+        
+        // Leer SSE (Server-Sent Events)
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        
+        while (true) {
+            const { done, value } = await reader.read();
+            
+            if (done) break;
+            
+            // Decodificar chunk y agregar al buffer
+            buffer += decoder.decode(value, { stream: true });
+            
+            // Procesar líneas completas
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); // Guardar línea incompleta en buffer
+            
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const jsonData = line.substring(6).trim();
+                    if (jsonData) {
+                        try {
+                            const data = JSON.parse(jsonData);
+                            actualizarProgresoImportacion(data);
+                        } catch (e) {
+                            console.error('Error parsing JSON:', e, jsonData);
+                        }
+                    }
+                }
+            }
+        }
+        
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            document.getElementById('errorImportacion').textContent = 'La operación excedió el tiempo límite (5 minutos). El archivo podría ser demasiado grande.';
+        } else {
+            document.getElementById('errorImportacion').textContent = `Error de conexión: ${error.message}`;
+        }
+        document.getElementById('errorImportacion').style.display = 'block';
+        document.getElementById('btnCerrar').disabled = false;
+    }
+}
+
+function actualizarProgresoImportacion(data) {
+    console.log('Progreso recibido:', data);
+    
+    // Actualizar barra de progreso
+    if (data.progreso !== undefined) {
+        document.getElementById('barraProgresoImportacion').style.width = data.progreso + '%';
+        document.getElementById('barraProgresoImportacion').textContent = data.progreso + '%';
+    }
+    
+    // Actualizar estado
+    if (data.estado) {
+        document.getElementById('estadoImportacion').textContent = data.estado;
+    }
+    
+    // Actualizar fase
+    if (data.fase) {
+        document.getElementById('faseActual').style.display = 'block';
+        const faseTextos = {
+            'lectura': 'Leyendo archivo',
+            'parseo': 'Parseando registros CSV',
+            'validacion': 'Validando datos',
+            'duplicados': 'Detectando duplicados en base de datos',
+            'preview': 'Esperando confirmación',
+            'insercion': 'Insertando registros nuevos'
+        };
+        document.getElementById('faseTexto').textContent = faseTextos[data.fase] || data.fase;
+    }
+    
+    // PREVIEW: Mostrar resumen y esperar confirmación
+    if (data.requiere_confirmacion && data.resumen && data.preview) {
+        mostrarPreviewConfirmacion(data);
+        return;
+    }
+    
+    // Mostrar estadísticas cuando haya datos
+    if (data.total !== undefined || data.insertadas !== undefined) {
+        document.getElementById('estadisticasImportacion').style.display = 'flex';
+        
+        if (data.total !== undefined) {
+            document.getElementById('totalRegistros').textContent = data.total.toLocaleString();
+        }
+        if (data.insertadas !== undefined) {
+            document.getElementById('insertadasImportacion').textContent = data.insertadas.toLocaleString();
+        }
+        if (data.duplicadas !== undefined) {
+            document.getElementById('duplicadasImportacion').textContent = data.duplicadas.toLocaleString();
+        }
+        if (data.invalidas !== undefined) {
+            document.getElementById('invalidasImportacion').textContent = data.invalidas.toLocaleString();
+        }
+    }
+    
+    // Manejar errores
+    if (data.error) {
+        document.getElementById('errorImportacion').textContent = data.error;
+        document.getElementById('errorImportacion').style.display = 'block';
+        document.getElementById('btnCerrar').disabled = false;
+    }
+    
+    // Manejar finalización
+    if (data.finalizado) {
+        document.getElementById('btnCerrar').disabled = false;
+        
+        if (!data.error) {
+            document.getElementById('exitoImportacion').innerHTML = `
+                <strong><i class="bi bi-check-circle"></i> Importación completada exitosamente</strong><br>
+                <small>
+                    Insertadas: ${(data.insertadas || 0).toLocaleString()}
+                </small>
+            `;
+            document.getElementById('exitoImportacion').style.display = 'block';
+        }
+    }
+}
+
+function mostrarPreviewConfirmacion(data) {
+    console.log('Mostrando preview de confirmación:', data);
+    
+    try {
+        // Guardar datos completos
+        checadasParaInsertar = data.checadas_nuevas;
+        datosPreview = data;
+        paginaNuevos = 1;
+        paginaInvalidas = 1;
+        
+        console.log('Checadas para insertar:', checadasParaInsertar.length);
+        
+        // En lugar de ocultar todo progresoImportacion, solo ocultamos los elementos de progreso
+        document.getElementById('estadoImportacion').style.display = 'none';
+        document.getElementById('barraProgresoImportacion').parentElement.style.display = 'none';
+        document.getElementById('faseActual').style.display = 'none';
+        document.getElementById('estadisticasImportacion').style.display = 'none';
+        
+        // Mostrar preview
+        document.getElementById('previewConfirmacion').style.display = 'block';
+        
+        console.log('Preview confirmación mostrado');
+        
+        // Llenar resumen
+        const resumen = data.resumen;
+        document.getElementById('resumenTotal').textContent = resumen.total_lineas.toLocaleString();
+        document.getElementById('resumenNuevas').textContent = resumen.nuevas.toLocaleString();
+        document.getElementById('resumenDuplicadas').textContent = resumen.duplicadas.toLocaleString();
+        document.getElementById('resumenInvalidas').textContent = resumen.invalidas.toLocaleString();
+        
+        console.log('Resumen llenado');
+        
+        // Mostrar total de registros nuevos
+        document.getElementById('badgeTotalNuevos').textContent = data.preview.total_nuevos.toLocaleString();
+        
+        // Renderizar primera página de registros nuevos
+        renderizarPaginaNuevos();
+        
+        console.log('Tabla renderizada');
+        
+        // Mostrar errores agrupados si hay
+        if (data.errores_agrupados && Object.keys(data.errores_agrupados).length > 0) {
+            mostrarErroresAgrupados(data.errores_agrupados);
+        }
+        
+        // Mostrar líneas inválidas si hay
+        if (data.preview.lineas_invalidas && data.preview.lineas_invalidas.length > 0) {
+            document.getElementById('badgeTotalInvalidas').textContent = data.preview.total_invalidas.toLocaleString();
+            renderizarPaginaInvalidas();
+            document.getElementById('previewInvalidas').style.display = 'block';
+        }
+        
+        // Habilitar botón cerrar
+        document.getElementById('btnCerrar').disabled = false;
+        
+        console.log('Preview completado exitosamente');
+    } catch (error) {
+        console.error('Error al mostrar preview:', error);
+        alert('Error al mostrar preview: ' + error.message);
+    }
+}
+
+function renderizarPaginaNuevos() {
+    if (!datosPreview || !datosPreview.checadas_nuevas) return;
+    
+    const registros = datosPreview.checadas_nuevas;
+    const inicio = (paginaNuevos - 1) * registrosPorPagina;
+    const fin = inicio + registrosPorPagina;
+    const paginaActual = registros.slice(inicio, fin);
+    const totalPaginas = Math.ceil(registros.length / registrosPorPagina);
+    
+    // Llenar tabla
+    const tbody = document.getElementById('tablaPreviewNuevos');
+    tbody.innerHTML = '';
+    
+    paginaActual.forEach((reg, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${inicio + idx + 1}</td>
+            <td>${reg.num_trabajador}</td>
+            <td>${reg.fecha}</td>
+            <td>${reg.hora}</td>
+            <td><small>${reg.checador}</small></td>
+        `;
+        tbody.appendChild(tr);
+    });
+    
+    // Actualizar controles de paginación
+    document.getElementById('textoPaginaNuevos').textContent = `Página ${paginaNuevos} de ${totalPaginas}`;
+    document.getElementById('btnPrevNuevos').disabled = paginaNuevos === 1;
+    document.getElementById('btnNextNuevos').disabled = paginaNuevos === totalPaginas;
+    document.getElementById('infoPaginacionNuevos').textContent = 
+        `Mostrando ${inicio + 1} - ${Math.min(fin, registros.length)} de ${registros.length.toLocaleString()}`;
+}
+
+function cambiarPaginaNuevos(direccion) {
+    paginaNuevos += direccion;
+    renderizarPaginaNuevos();
+    // Scroll al inicio de la tabla
+    document.querySelector('#tablaPreviewNuevos').closest('.table-responsive').scrollTop = 0;
+}
+
+function renderizarPaginaInvalidas() {
+    if (!datosPreview || !datosPreview.preview.lineas_invalidas) return;
+    
+    const lineas = datosPreview.preview.lineas_invalidas;
+    const inicio = (paginaInvalidas - 1) * registrosPorPagina;
+    const fin = inicio + registrosPorPagina;
+    const paginaActual = lineas.slice(inicio, fin);
+    const totalPaginas = Math.ceil(lineas.length / registrosPorPagina);
+    
+    // Llenar tabla
+    const tbody = document.getElementById('tablaInvalidas');
+    tbody.innerHTML = '';
+    
+    paginaActual.forEach(linea => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${linea.linea}</td>
+            <td><code style="font-size: 0.8em;">${linea.contenido}</code></td>
+            <td><small class="text-danger">${linea.error}</small></td>
+        `;
+        tbody.appendChild(tr);
+    });
+    
+    // Actualizar controles de paginación
+    document.getElementById('textoPaginaInvalidas').textContent = `Página ${paginaInvalidas} de ${totalPaginas}`;
+    document.getElementById('btnPrevInvalidas').disabled = paginaInvalidas === 1;
+    document.getElementById('btnNextInvalidas').disabled = paginaInvalidas === totalPaginas;
+    document.getElementById('infoPaginacionInvalidas').textContent = 
+        `Mostrando ${inicio + 1} - ${Math.min(fin, lineas.length)} de ${lineas.length.toLocaleString()}`;
+}
+
+function cambiarPaginaInvalidas(direccion) {
+    paginaInvalidas += direccion;
+    renderizarPaginaInvalidas();
+    document.querySelector('#tablaInvalidas').closest('.table-responsive').scrollTop = 0;
+}
+
+function mostrarErroresAgrupados(errores) {
+    const contenedor = document.getElementById('listaErroresAgrupados');
+    contenedor.innerHTML = '';
+    
+    // Ordenar por cantidad de errores (descendente)
+    const erroresOrdenados = Object.entries(errores).sort((a, b) => b[1].count - a[1].count);
+    
+    erroresOrdenados.forEach(([tipoError, info]) => {
+        const div = document.createElement('div');
+        div.className = 'mb-3 p-3 border rounded';
+        
+        let ejemplosHtml = '';
+        if (info.ejemplos && info.ejemplos.length > 0) {
+            ejemplosHtml = '<div class="mt-2"><strong>Ejemplos:</strong><ul class="mb-0">';
+            info.ejemplos.forEach(ej => {
+                ejemplosHtml += `<li><small>Línea ${ej.linea}: <code>${ej.contenido}</code></small></li>`;
+            });
+            ejemplosHtml += '</ul></div>';
+        }
+        
+        div.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h6 class="text-danger mb-1">
+                        <i class="bi bi-x-circle"></i> ${tipoError}
+                    </h6>
+                    <p class="mb-0"><strong>Cantidad:</strong> ${info.count.toLocaleString()} ocurrencias</p>
+                </div>
+                <span class="badge bg-danger">${info.count}</span>
+            </div>
+            ${ejemplosHtml}
+        `;
+        contenedor.appendChild(div);
+    });
+    
+    document.getElementById('cardErroresAgrupados').style.display = 'block';
+}
+
+async function confirmarImportacion() {
+    if (!checadasParaInsertar || checadasParaInsertar.length === 0) {
+        alert('No hay checadas para insertar');
+        return;
+    }
+    
+    // Ocultar preview, mostrar elementos de progreso
+    document.getElementById('previewConfirmacion').style.display = 'none';
+    document.getElementById('cardErroresAgrupados').style.display = 'none';
+    
+    // Mostrar elementos de progreso
+    document.getElementById('estadoImportacion').style.display = 'block';
+    document.getElementById('barraProgresoImportacion').parentElement.style.display = 'block';
+    document.getElementById('faseActual').style.display = 'block';
+    document.getElementById('estadisticasImportacion').style.display = 'flex';
+    
+    document.getElementById('btnCerrar').disabled = true;
+    
+    // Resetear progreso
+    document.getElementById('barraProgresoImportacion').style.width = '0%';
+    document.getElementById('barraProgresoImportacion').textContent = '0%';
+    document.getElementById('estadoImportacion').textContent = 'Insertando registros...';
+    document.getElementById('insertadasImportacion').textContent = '0';
+    
+    try {
+        const response = await fetch('/asistencias/importar-confirmar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                checadas: checadasParaInsertar
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+        
+        // Leer SSE
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+            
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const jsonData = line.substring(6);
+                    try {
+                        const data = JSON.parse(jsonData);
+                        actualizarProgresoImportacion(data);
+                    } catch (e) {
+                        console.error('Error parsing JSON:', e);
+                    }
+                }
+            }
+        }
+        
+    } catch (error) {
+        document.getElementById('errorImportacion').textContent = `Error: ${error.message}`;
+        document.getElementById('errorImportacion').style.display = 'block';
+        document.getElementById('btnCerrar').disabled = false;
+    }
+}
+
+function cancelarImportacion() {
+    checadasParaInsertar = null;
+    datosPreview = null;
+    paginaNuevos = 1;
+    paginaInvalidas = 1;
+    
+    // Cerrar modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalImportarChecadas'));
+    modal.hide();
+    
+    // Resetear todo
+    document.getElementById('previewConfirmacion').style.display = 'none';
+    document.getElementById('cardErroresAgrupados').style.display = 'none';
+    document.getElementById('selectorArchivo').style.display = 'block';
+}
+
+function mostrarPreviewInvalidas(lineas) {
+    // Esta función se mantiene para compatibilidad con mensajes de error
+    const tbody = document.getElementById('tablaInvalidas');
+    tbody.innerHTML = '';
+    
+    lineas.forEach(linea => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${linea.linea}</td>
+            <td><code>${linea.contenido}</code></td>
+            <td><small class="text-danger">${linea.error}</small></td>
+        `;
+        tbody.appendChild(tr);
+    });
+    
+    document.getElementById('previewInvalidas').style.display = 'block';
+}
+</script>
+
 {% endblock %}
