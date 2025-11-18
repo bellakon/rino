@@ -51,8 +51,54 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> <strong>Reporte Individual:</strong> Selecciona un trabajador para generar su reporte.
+                        <br><small>¿Necesitas generar reportes de varios trabajadores? 
+                        <a href="#" onclick="mostrarSeleccionMasiva(); return false;" class="alert-link">Haz clic aquí para selección masiva</a></small>
+                    </div>
+                    
                     <div class="d-flex justify-content-end">
                         <button type="button" class="btn btn-primary" onclick="irAStep2()">
+                            Siguiente <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Step 1B: Selección Masiva (oculto por defecto) -->
+                <div class="tab-pane fade" id="step1b" role="tabpanel">
+                    <h5 class="mb-3">Selecciona múltiples trabajadores</h5>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <input type="text" class="form-control" id="buscarTrabajadorMasivo" 
+                                   placeholder="Buscar por número o nombre...">
+                        </div>
+                        <div class="col-md-6">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarTodos()">
+                                <i class="bi bi-check-all"></i> Seleccionar Todos
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="deseleccionarTodos()">
+                                <i class="bi bi-x-circle"></i> Deseleccionar Todos
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
+                        <div id="listaTrabajadoresMasivo">
+                            <p class="text-muted">Cargando trabajadores...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-success mt-3" id="resumenSeleccion" style="display: none;">
+                        <strong>Trabajadores seleccionados:</strong> <span id="contadorSeleccionados">0</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-3">
+                        <button type="button" class="btn btn-secondary" onclick="volverAIndividual()">
+                            <i class="bi bi-arrow-left"></i> Volver a Reporte Individual
+                        </button>
+                        <button type="button" class="btn btn-primary" id="btnSiguienteMasivo">
                             Siguiente <i class="bi bi-arrow-right"></i>
                         </button>
                     </div>
@@ -156,11 +202,60 @@
                         <button type="button" class="btn btn-secondary" onclick="irAStep2()">
                             <i class="bi bi-arrow-left"></i> Anterior
                         </button>
-                        <button type="button" class="btn btn-primary" onclick="generarPDF()" id="btnGenerarPDF" style="display: none;">
-                            <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
-                        </button>
+                        <div>
+                            <button type="button" class="btn btn-primary" onclick="generarPDF()" id="btnGenerarPDF" style="display: none;">
+                                <i class="bi bi-file-earmark-pdf"></i> Descargar PDF Individual
+                            </button>
+                            <button type="button" class="btn btn-success" onclick="generarPDFMasivo()" id="btnGenerarPDFMasivo" style="display: none;">
+                                <i class="bi bi-file-earmark-pdf-fill"></i> Descargar PDF Masivo
+                            </button>
+                        </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Resultados Masivos -->
+<div class="modal fade" id="modalResultadosMasivos" tabindex="-1" aria-labelledby="modalResultadosMasivosLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalResultadosMasivosLabel">
+                    <i class="bi bi-check-circle"></i> Resultados del Procesamiento Masivo
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Resumen de totales -->
+                <div class="alert alert-info" id="resumenMasivo">
+                    <h6><i class="bi bi-info-circle"></i> Resumen</h6>
+                    <div id="resumenMasivoDetalle"></div>
+                </div>
+                
+                <!-- Tabla de resultados por trabajador -->
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Trabajador</th>
+                                <th>Nombre</th>
+                                <th>Estado</th>
+                                <th>Nuevos</th>
+                                <th>Actualizados</th>
+                                <th>Total Días</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyResultadosMasivos">
+                            <!-- Se llena dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
@@ -169,11 +264,58 @@
 
 {% block extra_js %}
 <script>
+// Variables globales
 let trabajadorSeleccionado = null;
+let modoMasivo = false;
+let trabajadoresSeleccionados = [];
+let registrosProcesados = [];
+let datosGeneralesPDF = {};
+let horariosValidados = false; // Nueva variable para rastrear validación en modo masivo
 
 // Cargar trabajadores al inicio
 document.addEventListener('DOMContentLoaded', function() {
     cargarTrabajadores();
+    
+    // Configurar event listener para el botón siguiente masivo
+    const btnSiguienteMasivo = document.getElementById('btnSiguienteMasivo');
+    if (btnSiguienteMasivo) {
+        btnSiguienteMasivo.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('[BITACORA] Click en btnSiguienteMasivo');
+            console.log('[BITACORA] Trabajadores seleccionados antes de avanzar:', trabajadoresSeleccionados);
+            irAStep2Masivo();
+        });
+    } else {
+        console.error('[BITACORA] No se encontró btnSiguienteMasivo');
+    }
+    
+    // Resetear validación cuando cambien las fechas en modo masivo
+    const fechaInicio = document.getElementById('fechaInicio');
+    const fechaFin = document.getElementById('fechaFin');
+    
+    if (fechaInicio) {
+        fechaInicio.addEventListener('change', function() {
+            if (modoMasivo) {
+                horariosValidados = false;
+                const infoHorario = document.getElementById('infoHorario');
+                if (infoHorario) {
+                    infoHorario.classList.add('d-none');
+                }
+            }
+        });
+    }
+    
+    if (fechaFin) {
+        fechaFin.addEventListener('change', function() {
+            if (modoMasivo) {
+                horariosValidados = false;
+                const infoHorario = document.getElementById('infoHorario');
+                if (infoHorario) {
+                    infoHorario.classList.add('d-none');
+                }
+            }
+        });
+    }
 });
 
 async function cargarTrabajadores() {
@@ -244,11 +386,31 @@ function irAStep3() {
         return;
     }
     
-    // Actualizar resumen
-    document.getElementById('resumenTrabajador').textContent = 
-        `${trabajadorSeleccionado.num_trabajador} - ${trabajadorSeleccionado.nombre}`;
-    document.getElementById('resumenPeriodo').textContent = 
-        `${fechaInicio} al ${fechaFin}`;
+    // Validación adicional para modo masivo
+    if (modoMasivo && !horariosValidados) {
+        mostrarToast('Debe verificar los horarios antes de continuar', 'warning');
+        return;
+    }
+    
+    // Actualizar resumen dependiendo del modo
+    if (modoMasivo) {
+        // Modo masivo
+        document.getElementById('resumenTrabajador').textContent = 
+            `${trabajadoresSeleccionados.length} trabajadores seleccionados`;
+        document.getElementById('resumenPeriodo').textContent = 
+            `${fechaInicio} al ${fechaFin}`;
+    } else {
+        // Modo individual
+        if (trabajadorSeleccionado) {
+            document.getElementById('resumenTrabajador').textContent = 
+                `${trabajadorSeleccionado.num_trabajador} - ${trabajadorSeleccionado.nombre}`;
+            document.getElementById('resumenPeriodo').textContent = 
+                `${fechaInicio} al ${fechaFin}`;
+        } else {
+            mostrarToast('No hay trabajador seleccionado', 'error');
+            return;
+        }
+    }
     
     document.getElementById('step3-tab').classList.remove('disabled');
     document.getElementById('step3-tab').click();
@@ -264,50 +426,144 @@ async function verificarHorario() {
     }
     
     try {
-        console.log('[BITACORA] Verificando horario para trabajador:', trabajadorSeleccionado.num_trabajador);
-        const response = await fetch('/bitacora/horario', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                num_trabajador: trabajadorSeleccionado.num_trabajador,
-                fecha_inicio: fechaInicio,
-                fecha_fin: fechaFin
-            })
-        });
-        
-        console.log('[BITACORA] Response status:', response.status);
-        const data = await response.json();
-        console.log('[BITACORA] Horario response:', data);
-        
-        if (data.success) {
-            const horario = data.horario;
-            const infoHorario = document.getElementById('infoHorario');
-            const detalleHorario = document.getElementById('detalleHorario');
+        // Verificar si es modo masivo o individual
+        if (modoMasivo) {
+            console.log('[BITACORA] Verificando horarios para', trabajadoresSeleccionados.length, 'trabajadores');
             
-            console.log('[BITACORA] Horario recibido:', horario);
+            // Resetear validación
+            horariosValidados = false;
             
-            let html = '<ul class="mb-0">';
-            html += `<li><strong>Turno:</strong> ${horario.horario_nombre} (${horario.turno_nomenclatura || 'N/A'})</li>`;
-            html += `<li><strong>Fecha Inicio:</strong> ${horario.fecha_inicio_asignacion}</li>`;
-            html += `<li><strong>Fecha Fin:</strong> ${horario.fecha_fin_asignacion || 'Vigente'}</li>`;
-            html += `<li><strong>Horarios por día:</strong></li>`;
-            html += '<ul>';
+            const trabajadoresSinHorario = [];
+            const trabajadoresConHorario = [];
             
-            const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-            for (let i = 0; i < 7; i++) {
-                if (horario.horarios_por_dia && horario.horarios_por_dia[i]) {
-                    html += `<li><strong>${diasSemana[i]}:</strong> ${horario.horarios_por_dia[i]}</li>`;
+            // Verificar horario de cada trabajador seleccionado
+            for (const numTrabajador of trabajadoresSeleccionados) {
+                const response = await fetch('/bitacora/horario', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        num_trabajador: numTrabajador,
+                        fecha_inicio: fechaInicio,
+                        fecha_fin: fechaFin
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    trabajadoresConHorario.push({
+                        num: numTrabajador,
+                        horario: data.horario
+                    });
+                } else {
+                    trabajadoresSinHorario.push(numTrabajador);
                 }
             }
             
-            html += '</ul></ul>';
+            const infoHorario = document.getElementById('infoHorario');
+            const detalleHorario = document.getElementById('detalleHorario');
             
-            detalleHorario.innerHTML = html;
-            infoHorario.classList.remove('d-none');
-            console.log('[BITACORA] Horario mostrado exitosamente');
+            if (trabajadoresSinHorario.length > 0) {
+                // Mostrar error con los trabajadores que NO tienen horario
+                let html = '<div class="alert alert-danger">';
+                html += '<h6>⚠️ Los siguientes trabajadores NO tienen horario asignado:</h6>';
+                html += '<ul class="mb-0">';
+                trabajadoresSinHorario.forEach(num => {
+                    html += '<li>Trabajador #' + num + '</li>';
+                });
+                html += '</ul>';
+                html += '<p class="mt-2 mb-0"><strong>No podrá continuar hasta que todos los trabajadores tengan horario asignado en estas fechas.</strong></p>';
+                html += '</div>';
+                
+                if (trabajadoresConHorario.length > 0) {
+                    html += '<div class="alert alert-success mt-2">';
+                    html += '<h6>✅ Trabajadores con horario asignado:</h6>';
+                    html += '<ul class="mb-0">';
+                    trabajadoresConHorario.forEach(t => {
+                        html += '<li>Trabajador #' + t.num + ' - ' + t.horario.horario_nombre + '</li>';
+                    });
+                    html += '</ul>';
+                    html += '</div>';
+                }
+                
+                detalleHorario.innerHTML = html;
+                infoHorario.classList.remove('d-none');
+                
+                // NO permitir avanzar
+                horariosValidados = false;
+                mostrarToast(trabajadoresSinHorario.length + ' trabajadores sin horario. No puede continuar.', 'error');
+                
+            } else {
+                // Todos tienen horario - PERMITIR avanzar
+                horariosValidados = true;
+                
+                let html = '<div class="alert alert-success">';
+                html += '<h6>✅ Todos los trabajadores (' + trabajadoresConHorario.length + ') tienen horario asignado</h6>';
+                html += '<ul class="mb-0">';
+                trabajadoresConHorario.forEach(t => {
+                    const nomenclatura = t.horario.turno_nomenclatura || 'N/A';
+                    html += '<li>Trabajador #' + t.num + ' - ' + t.horario.horario_nombre + ' (' + nomenclatura + ')</li>';
+                });
+                html += '</ul>';
+                html += '<p class="mt-2 mb-0 text-success"><strong><i class="bi bi-check-circle"></i> Puede continuar al siguiente paso.</strong></p>';
+                html += '</div>';
+                
+                detalleHorario.innerHTML = html;
+                infoHorario.classList.remove('d-none');
+                
+                mostrarToast('Todos los trabajadores tienen horario asignado', 'success');
+            }
+            
         } else {
-            console.error('[BITACORA] Error en horario:', data.message);
-            mostrarToast(data.message, 'error');
+            // Modo individual (código original)
+            console.log('[BITACORA] Verificando horario para trabajador:', trabajadorSeleccionado.num_trabajador);
+            const response = await fetch('/bitacora/horario', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    num_trabajador: trabajadorSeleccionado.num_trabajador,
+                    fecha_inicio: fechaInicio,
+                    fecha_fin: fechaFin
+                })
+            });
+            
+            console.log('[BITACORA] Response status:', response.status);
+            const data = await response.json();
+            console.log('[BITACORA] Horario response:', data);
+            
+            if (data.success) {
+                const horario = data.horario;
+                const infoHorario = document.getElementById('infoHorario');
+                const detalleHorario = document.getElementById('detalleHorario');
+                
+                console.log('[BITACORA] Horario recibido:', horario);
+                
+                const nomenclatura = horario.turno_nomenclatura || 'N/A';
+                const fechaFin = horario.fecha_fin_asignacion || 'Vigente';
+                
+                let html = '<ul class="mb-0">';
+                html += '<li><strong>Turno:</strong> ' + horario.horario_nombre + ' (' + nomenclatura + ')</li>';
+                html += '<li><strong>Fecha Inicio:</strong> ' + horario.fecha_inicio_asignacion + '</li>';
+                html += '<li><strong>Fecha Fin:</strong> ' + fechaFin + '</li>';
+                html += '<li><strong>Horarios por día:</strong></li>';
+                html += '<ul>';
+                
+                const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+                for (let i = 0; i < 7; i++) {
+                    if (horario.horarios_por_dia && horario.horarios_por_dia[i]) {
+                        html += '<li><strong>' + diasSemana[i] + ':</strong> ' + horario.horarios_por_dia[i] + '</li>';
+                    }
+                }
+                
+                html += '</ul></ul>';
+                
+                detalleHorario.innerHTML = html;
+                infoHorario.classList.remove('d-none');
+                console.log('[BITACORA] Horario mostrado exitosamente');
+            } else {
+                console.error('[BITACORA] Error en horario:', data.message);
+                mostrarToast(data.message, 'error');
+            }
         }
     } catch (error) {
         console.error('[BITACORA] Error al verificar horario:', error);
@@ -322,13 +578,56 @@ async function procesarBitacora() {
     
     try {
         console.log('[BITACORA] Iniciando procesamiento de bitácora');
+        
+        const fechaInicio = document.getElementById('fechaInicio').value;
+        const fechaFin = document.getElementById('fechaFin').value;
+        
+        // Verificar modo
+        if (modoMasivo) {
+            // Modo masivo - procesar múltiples trabajadores
+            console.log('[BITACORA] Modo masivo - procesando', trabajadoresSeleccionados.length, 'trabajadores');
+            
+            const response = await fetch('/bitacora/procesar-masivo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    num_trabajadores: trabajadoresSeleccionados,
+                    fecha_inicio: fechaInicio,
+                    fecha_fin: fechaFin
+                })
+            });
+            
+            const data = await response.json();
+            console.log('[BITACORA] Respuesta procesamiento masivo:', data);
+            
+            if (data.success) {
+                // Mostrar modal con resultados
+                mostrarModalResultadosMasivos(data.resultados, data.totales, fechaInicio, fechaFin);
+                mostrarToast(data.message, 'success');
+            } else {
+                mostrarToast(data.message, 'error');
+            }
+            
+            btnProcesar.disabled = false;
+            btnProcesar.innerHTML = '<i class="bi bi-gear-fill"></i> Procesar Bitácora';
+            return;
+        }
+        
+        // Modo individual
+        if (!trabajadorSeleccionado) {
+            mostrarToast('No hay trabajador seleccionado', 'error');
+            btnProcesar.disabled = false;
+            btnProcesar.innerHTML = '<i class="bi bi-gear-fill"></i> Procesar Bitácora';
+            return;
+        }
+        
         const response = await fetch('/bitacora/procesar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 num_trabajador: trabajadorSeleccionado.num_trabajador,
-                fecha_inicio: document.getElementById('fechaInicio').value,
-                fecha_fin: document.getElementById('fechaFin').value
+                fecha_inicio: fechaInicio,
+                fecha_fin: fechaFin
             })
         });
         
@@ -358,19 +657,19 @@ function mostrarResultados(registros, mensaje, stats) {
     mensajeResultado.className = 'alert alert-success';
     
     // Construir mensaje con estadísticas
-    let mensajeHtml = `<strong>${mensaje}</strong>`;
+    let mensajeHtml = '<strong>' + mensaje + '</strong>';
     if (stats) {
         mensajeHtml += '<br><small class="mt-2 d-block">';
         if (stats.insertados > 0) {
-            mensajeHtml += `<i class="bi bi-plus-circle text-success"></i> ${stats.insertados} nuevos | `;
+            mensajeHtml += '<i class="bi bi-plus-circle text-success"></i> ' + stats.insertados + ' nuevos | ';
         }
         if (stats.actualizados > 0) {
-            mensajeHtml += `<i class="bi bi-arrow-repeat text-info"></i> ${stats.actualizados} actualizados | `;
+            mensajeHtml += '<i class="bi bi-arrow-repeat text-info"></i> ' + stats.actualizados + ' actualizados | ';
         }
         if (stats.errores > 0) {
-            mensajeHtml += `<i class="bi bi-exclamation-triangle text-warning"></i> ${stats.errores} errores | `;
+            mensajeHtml += '<i class="bi bi-exclamation-triangle text-warning"></i> ' + stats.errores + ' errores | ';
         }
-        mensajeHtml += `<i class="bi bi-calendar-check"></i> Total: ${registros.length} días procesados`;
+        mensajeHtml += '<i class="bi bi-calendar-check"></i> Total: ' + registros.length + ' días procesados';
         mensajeHtml += '</small>';
     }
     mensajeResultado.innerHTML = mensajeHtml;
@@ -422,8 +721,14 @@ function mostrarResultados(registros, mensaje, stats) {
         fecha_fin: fechaFin
     };
     
-    // Mostrar botón de PDF
-    document.getElementById('btnGenerarPDF').style.display = 'inline-block';
+    // Mostrar botón de PDF apropiado según el modo
+    if (modoMasivo) {
+        document.getElementById('btnGenerarPDFMasivo').style.display = 'inline-block';
+        document.getElementById('btnGenerarPDF').style.display = 'none';
+    } else {
+        document.getElementById('btnGenerarPDF').style.display = 'inline-block';
+        document.getElementById('btnGenerarPDFMasivo').style.display = 'none';
+    }
     
     document.getElementById('resultados').classList.remove('d-none');
 }
@@ -441,10 +746,6 @@ function obtenerBadgeCodigo(codigo) {
     };
     return badges[codigo] || `<span class="badge bg-secondary">${codigo}</span>`;
 }
-
-// Variable global para almacenar los registros procesados
-let registrosProcesados = [];
-let datosGeneralesPDF = {};
 
 async function generarPDF() {
     console.log('[BITACORA] Generando PDF...');
@@ -479,7 +780,14 @@ async function generarPDF() {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `bitacora_${datosGeneralesPDF.num_trabajador}_${datosGeneralesPDF.fecha_inicio}_${datosGeneralesPDF.fecha_fin}.pdf`;
+            
+            // Limpiar nombre del trabajador (quitar espacios, acentos, etc.)
+            const nombreLimpio = datosGeneralesPDF.nombre_trabajador
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Quitar acentos
+                .replace(/\s+/g, '_') // Reemplazar espacios con guiones bajos
+                .toLowerCase();
+            
+            a.download = 'bitacora_' + datosGeneralesPDF.num_trabajador + '_' + nombreLimpio + '_' + datosGeneralesPDF.fecha_inicio + '_' + datosGeneralesPDF.fecha_fin + '.pdf';
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
@@ -496,7 +804,371 @@ async function generarPDF() {
         mostrarToast('Error al generar PDF', 'error');
     } finally {
         btnGenerarPDF.disabled = false;
-        btnGenerarPDF.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> Descargar PDF';
+        btnGenerarPDF.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> Descargar PDF Individual';
+    }
+}
+
+// ===== FUNCIONES PARA REPORTE MASIVO =====
+
+function mostrarSeleccionMasiva() {
+    modoMasivo = true;
+    document.getElementById('step1').classList.remove('show', 'active');
+    document.getElementById('step1b').classList.add('show', 'active');
+    cargarTrabajadoresMasivo();
+}
+
+function volverAIndividual() {
+    modoMasivo = false;
+    trabajadoresSeleccionados = [];
+    horariosValidados = false; // Resetear validación
+    document.getElementById('step1b').classList.remove('show', 'active');
+    document.getElementById('step1').classList.add('show', 'active');
+}
+
+async function cargarTrabajadoresMasivo() {
+    try {
+        const response = await fetch('/trabajadores/listar');
+        const data = await response.json();
+        const trabajadores = data.trabajadores || data;
+        
+        const listaTrabajadores = document.getElementById('listaTrabajadoresMasivo');
+        listaTrabajadores.innerHTML = '';
+        
+        if (trabajadores && Array.isArray(trabajadores)) {
+            trabajadores.forEach(t => {
+                const div = document.createElement('div');
+                div.className = 'form-check trabajador-item';
+                div.setAttribute('data-num', t.num_trabajador);
+                div.setAttribute('data-nombre', (t.nombre || 'Sin nombre').toLowerCase());
+                div.innerHTML = `
+                    <input class="form-check-input trabajador-checkbox" type="checkbox" 
+                           value="${t.num_trabajador}" id="check_${t.num_trabajador}"
+                           onchange="actualizarSeleccion()">
+                    <label class="form-check-label" for="check_${t.num_trabajador}">
+                        ${t.num_trabajador} - ${t.nombre || 'Sin nombre'}
+                    </label>
+                `;
+                listaTrabajadores.appendChild(div);
+            });
+            
+            // Configurar el buscador
+            const inputBuscar = document.getElementById('buscarTrabajadorMasivo');
+            inputBuscar.addEventListener('input', filtrarTrabajadores);
+        }
+    } catch (error) {
+        console.error('[BITACORA] Error cargando trabajadores masivo:', error);
+    }
+}
+
+function filtrarTrabajadores() {
+    const busqueda = document.getElementById('buscarTrabajadorMasivo').value.toLowerCase().trim();
+    const items = document.querySelectorAll('.trabajador-item');
+    
+    let visibles = 0;
+    items.forEach(item => {
+        const num = item.getAttribute('data-num');
+        const nombre = item.getAttribute('data-nombre');
+        
+        // Buscar por número o nombre
+        if (num.includes(busqueda) || nombre.includes(busqueda)) {
+            item.style.display = 'block';
+            visibles++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    // Opcional: Mostrar mensaje si no hay resultados
+    if (visibles === 0 && busqueda !== '') {
+        console.log('[BITACORA] Sin resultados para:', busqueda);
+    }
+}
+
+function seleccionarTodos() {
+    // Solo selecciona los visibles (no ocultos por el filtro)
+    document.querySelectorAll('.trabajador-item').forEach(item => {
+        if (item.style.display !== 'none') {
+            const checkbox = item.querySelector('.trabajador-checkbox');
+            if (checkbox) {
+                checkbox.checked = true;
+            }
+        }
+    });
+    actualizarSeleccion();
+}
+
+function deseleccionarTodos() {
+    // Solo deselecciona los visibles (no ocultos por el filtro)
+    document.querySelectorAll('.trabajador-item').forEach(item => {
+        if (item.style.display !== 'none') {
+            const checkbox = item.querySelector('.trabajador-checkbox');
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+        }
+    });
+    actualizarSeleccion();
+}
+
+function actualizarSeleccion() {
+    trabajadoresSeleccionados = Array.from(document.querySelectorAll('.trabajador-checkbox:checked'))
+        .map(cb => parseInt(cb.value));
+    
+    console.log('[BITACORA] Trabajadores seleccionados:', trabajadoresSeleccionados);
+    
+    const contador = document.getElementById('contadorSeleccionados');
+    if (contador) {
+        contador.textContent = trabajadoresSeleccionados.length;
+    }
+    
+    const resumen = document.getElementById('resumenSeleccion');
+    if (resumen) {
+        if (trabajadoresSeleccionados.length > 0) {
+            resumen.style.display = 'block';
+        } else {
+            resumen.style.display = 'none';
+        }
+    }
+}
+
+async function irAStep2Masivo() {
+    console.log('[BITACORA] irAStep2Masivo - Trabajadores seleccionados:', trabajadoresSeleccionados);
+    
+    if (trabajadoresSeleccionados.length === 0) {
+        mostrarToast('Debe seleccionar al menos un trabajador', 'warning');
+        return;
+    }
+    
+    console.log('[BITACORA] Avanzando a Step 2 con', trabajadoresSeleccionados.length, 'trabajadores');
+    
+    // Ocultar Step 1B y mostrar Step 2
+    const step1b = document.getElementById('step1b');
+    if (step1b) {
+        step1b.classList.remove('show', 'active');
+    }
+    
+    // Activar Step 2
+    const step2Tab = document.getElementById('step2-tab');
+    const step2 = document.getElementById('step2');
+    
+    if (step2Tab) {
+        step2Tab.classList.remove('disabled');
+    }
+    
+    if (step2) {
+        step2.classList.add('show', 'active');
+    }
+    
+    // Usar Bootstrap Tab para cambiar
+    if (step2Tab) {
+        const tab2 = new bootstrap.Tab(step2Tab);
+        tab2.show();
+    }
+}
+
+async function generarPDFMasivo() {
+    console.log('[BITACORA] Generando PDF masivo para', trabajadoresSeleccionados.length, 'trabajadores');
+    
+    if (trabajadoresSeleccionados.length === 0) {
+        mostrarToast('No hay trabajadores seleccionados', 'warning');
+        return;
+    }
+    
+    const fechaInicio = document.getElementById('fechaInicio').value;
+    const fechaFin = document.getElementById('fechaFin').value;
+    
+    if (!fechaInicio || !fechaFin) {
+        mostrarToast('Debe especificar fechas', 'warning');
+        return;
+    }
+    
+    const btnGenerarPDFMasivo = document.getElementById('btnGenerarPDFMasivo');
+    btnGenerarPDFMasivo.disabled = true;
+    btnGenerarPDFMasivo.innerHTML = '<i class="bi bi-hourglass-split"></i> Generando PDF Masivo...';
+    
+    try {
+        const response = await fetch('/bitacora/generar-pdf-masivo', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                num_trabajadores: trabajadoresSeleccionados,
+                fecha_inicio: fechaInicio,
+                fecha_fin: fechaFin
+            })
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `registro_checadas_${trabajadoresSeleccionados.length}trabajadores_${fechaInicio}_${fechaFin}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            mostrarToast(`PDF masivo generado exitosamente (${trabajadoresSeleccionados.length} trabajadores)`, 'success');
+            console.log('[BITACORA] PDF masivo descargado exitosamente');
+        } else {
+            const data = await response.json();
+            mostrarToast(data.message || 'Error al generar PDF masivo', 'error');
+        }
+    } catch (error) {
+        console.error('[BITACORA] Error al generar PDF masivo:', error);
+        mostrarToast('Error al generar PDF masivo', 'error');
+    } finally {
+        btnGenerarPDFMasivo.disabled = false;
+        btnGenerarPDFMasivo.innerHTML = '<i class="bi bi-file-earmark-pdf-fill"></i> Descargar PDF Masivo';
+    }
+}
+
+function mostrarModalResultadosMasivos(resultados, totales, fechaInicio, fechaFin) {
+    console.log('[BITACORA] Mostrando modal de resultados masivos');
+    
+    // Guardar fechas para descargas individuales
+    window.fechasProcesamientoMasivo = { fechaInicio, fechaFin };
+    
+    // Actualizar resumen
+    const resumenDetalle = document.getElementById('resumenMasivoDetalle');
+    let htmlResumen = '<div class="row">';
+    htmlResumen += '<div class="col-md-3"><strong>Trabajadores procesados:</strong> ' + totales.exitosos + '</div>';
+    if (totales.fallidos > 0) {
+        htmlResumen += '<div class="col-md-3 text-danger"><strong>Con errores:</strong> ' + totales.fallidos + '</div>';
+    }
+    htmlResumen += '<div class="col-md-3"><strong>Nuevos registros:</strong> ' + totales.insertados + '</div>';
+    htmlResumen += '<div class="col-md-3"><strong>Actualizados:</strong> ' + totales.actualizados + '</div>';
+    htmlResumen += '</div>';
+    htmlResumen += '<div class="row mt-2">';
+    htmlResumen += '<div class="col-md-12"><strong>Total de días procesados:</strong> ' + totales.total_registros + '</div>';
+    htmlResumen += '</div>';
+    resumenDetalle.innerHTML = htmlResumen;
+    
+    // Llenar tabla
+    const tbody = document.getElementById('tbodyResultadosMasivos');
+    tbody.innerHTML = '';
+    
+    resultados.forEach(resultado => {
+        const tr = document.createElement('tr');
+        
+        // Estado con badge
+        let badgeEstado = '';
+        if (resultado.success) {
+            badgeEstado = '<span class="badge bg-success">Exitoso</span>';
+        } else {
+            badgeEstado = '<span class="badge bg-danger">Error</span>';
+        }
+        
+        // Crear celdas
+        tr.innerHTML = '<td>' + resultado.num_trabajador + '</td>' +
+                       '<td>' + resultado.nombre + '</td>' +
+                       '<td>' + badgeEstado + '</td>' +
+                       '<td>' + resultado.stats.insertados + '</td>' +
+                       '<td>' + resultado.stats.actualizados + '</td>' +
+                       '<td>' + resultado.total_registros + '</td>' +
+                       '<td></td>'; // Celda vacía para acciones
+        
+        // Obtener la celda de acciones (última celda)
+        const celdaAcciones = tr.lastElementChild;
+        
+        if (resultado.success && resultado.total_registros > 0) {
+            const btnPdf = document.createElement('button');
+            btnPdf.className = 'btn btn-sm btn-primary';
+            btnPdf.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> PDF';
+            btnPdf.onclick = function() {
+                descargarPdfIndividualDesdeMasivo(resultado.num_trabajador, resultado.nombre);
+            };
+            celdaAcciones.appendChild(btnPdf);
+        } else if (!resultado.success) {
+            const spanError = document.createElement('small');
+            spanError.className = 'text-danger';
+            spanError.textContent = resultado.error || 'Error desconocido';
+            celdaAcciones.appendChild(spanError);
+        } else {
+            const spanNoData = document.createElement('small');
+            spanNoData.className = 'text-muted';
+            spanNoData.textContent = 'Sin registros';
+            celdaAcciones.appendChild(spanNoData);
+        }
+        
+        tbody.appendChild(tr);
+    });
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('modalResultadosMasivos'));
+    modal.show();
+}
+
+async function descargarPdfIndividualDesdeMasivo(numTrabajador, nombreTrabajador) {
+    console.log('[BITACORA] Descargando PDF individual para trabajador:', numTrabajador);
+    
+    const fechas = window.fechasProcesamientoMasivo;
+    if (!fechas) {
+        mostrarToast('Error: No se encontraron las fechas de procesamiento', 'error');
+        return;
+    }
+    
+    try {
+        // Primero obtener los registros procesados
+        const listarResponse = await fetch('/bitacora/listar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                num_trabajador: numTrabajador,
+                fecha_inicio: fechas.fechaInicio,
+                fecha_fin: fechas.fechaFin
+            })
+        });
+        
+        const listarData = await listarResponse.json();
+        
+        if (!listarData.success || !listarData.registros || listarData.registros.length === 0) {
+            mostrarToast('No se encontraron registros para este trabajador', 'warning');
+            return;
+        }
+        
+        // Generar PDF
+        const pdfResponse = await fetch('/bitacora/generar-pdf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                registros: listarData.registros,
+                nombre_trabajador: nombreTrabajador,
+                num_trabajador: numTrabajador,
+                fecha_inicio: fechas.fechaInicio,
+                fecha_fin: fechas.fechaFin
+            })
+        });
+        
+        if (pdfResponse.ok) {
+            const blob = await pdfResponse.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // Limpiar nombre del trabajador
+            const nombreLimpio = nombreTrabajador
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Quitar acentos
+                .replace(/\s+/g, '_') // Reemplazar espacios con guiones bajos
+                .toLowerCase();
+            
+            a.download = 'bitacora_' + numTrabajador + '_' + nombreLimpio + '_' + fechas.fechaInicio + '_' + fechas.fechaFin + '.pdf';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            mostrarToast('PDF descargado exitosamente', 'success');
+        } else {
+            const errorData = await pdfResponse.json();
+            mostrarToast(errorData.message || 'Error al generar PDF', 'error');
+        }
+        
+    } catch (error) {
+        console.error('[BITACORA] Error descargando PDF individual:', error);
+        mostrarToast('Error al descargar PDF', 'error');
     }
 }
 

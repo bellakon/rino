@@ -1,9 +1,11 @@
 from flask import Blueprint, render_template, request, jsonify, send_file
 import logging
 from app.features.bitacora.services.procesar_bitacora_use_case import ProcesarBitacoraUseCase
+from app.features.bitacora.services.procesar_bitacora_masivo_use_case import procesar_bitacora_masivo_use_case
 from app.features.bitacora.services.listar_bitacora_use_case import ListarBitacoraUseCase
 from app.features.bitacora.services.obtener_horario_asignado_use_case import ObtenerHorarioAsignadoUseCase
 from app.features.bitacora.services.generar_pdf_bitacora_use_case import generar_pdf_bitacora_use_case
+from app.features.bitacora.services.generar_pdf_masivo_bitacora_use_case import generar_pdf_masivo_bitacora_use_case
 
 # Configurar logger
 logger = logging.getLogger(__name__)
@@ -168,39 +170,56 @@ def procesar_bitacora():
             'message': f'Error al procesar bitácora: {str(e)}'
         }), 500
 
-@bitacora_bp.route('/listar', methods=['GET'])
+@bitacora_bp.route('/listar', methods=['GET', 'POST'])
 def listar_bitacora():
     """Lista registros de bitácora con filtros opcionales"""
     try:
-        logger.info("[BITACORA] GET /bitacora/listar")
-        # Obtener parámetros de la query string
-        num_trabajador = request.args.get('num_trabajador')
-        fecha_inicio = request.args.get('fecha_inicio')
-        fecha_fin = request.args.get('fecha_fin')
-        codigo_incidencia = request.args.get('codigo_incidencia')
+        logger.info(f"[BITACORA] {request.method} /bitacora/listar")
+        
+        # Obtener parámetros dependiendo del método
+        if request.method == 'POST':
+            data = request.get_json()
+            num_trabajador = data.get('num_trabajador')
+            fecha_inicio_str = data.get('fecha_inicio')
+            fecha_fin_str = data.get('fecha_fin')
+            codigo_incidencia = data.get('codigo_incidencia')
+        else:
+            # GET - usar query string
+            num_trabajador = request.args.get('num_trabajador')
+            fecha_inicio_str = request.args.get('fecha_inicio')
+            fecha_fin_str = request.args.get('fecha_fin')
+            codigo_incidencia = request.args.get('codigo_incidencia')
+        
+        # Convertir fechas de string a date
+        from datetime import datetime
+        fecha_inicio = None
+        fecha_fin = None
+        
+        if fecha_inicio_str:
+            fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
+        
+        if fecha_fin_str:
+            fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
         
         logger.debug(f"[BITACORA] Filtros: trabajador={num_trabajador}, inicio={fecha_inicio}, fin={fecha_fin}, codigo={codigo_incidencia}")
         
         use_case = ListarBitacoraUseCase()
         logger.debug("[BITACORA] Ejecutando ListarBitacoraUseCase")
-        registros, error = use_case.ejecutar(
+        registros = use_case.ejecutar(
             num_trabajador=num_trabajador,
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
             codigo_incidencia=codigo_incidencia
         )
         
-        if error:
-            logger.error(f"[BITACORA] Error en listar: {error}")
-            return jsonify({
-                'success': False,
-                'message': error
-            }), 400
-        
         logger.info(f"[BITACORA] Listado obtenido: {len(registros or [])} registros")
+        
+        # Convertir registros a diccionarios para JSON
+        registros_dict = [reg.to_dict() for reg in registros] if registros else []
+        
         return jsonify({
             'success': True,
-            'registros': registros or []
+            'registros': registros_dict
         })
         
     except Exception as e:
@@ -296,3 +315,143 @@ def generar_pdf():
             'success': False,
             'message': f'Error al generar PDF: {str(e)}'
         }), 500
+
+@bitacora_bp.route('/generar-pdf-masivo', methods=['POST'])
+def generar_pdf_masivo():
+    """Genera PDF masivo con reportes individuales de múltiples trabajadores"""
+    try:
+        logger.info("[BITACORA] POST /bitacora/generar-pdf-masivo")
+        data = request.get_json()
+        num_trabajadores = data.get('num_trabajadores', [])
+        fecha_inicio = data.get('fecha_inicio', '')
+        fecha_fin = data.get('fecha_fin', '')
+        
+        logger.debug(f"[BITACORA] Generando PDF masivo para {len(num_trabajadores)} trabajadores")
+        
+        if not num_trabajadores:
+            return jsonify({
+                'success': False,
+                'message': 'Debe seleccionar al menos un trabajador'
+            }), 400
+        
+        if not fecha_inicio or not fecha_fin:
+            return jsonify({
+                'success': False,
+                'message': 'Debe especificar fechas de inicio y fin'
+            }), 400
+        
+        # Generar PDF masivo
+        buffer, error = generar_pdf_masivo_bitacora_use_case.ejecutar(
+            num_trabajadores=num_trabajadores,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin
+        )
+        
+        if error:
+            logger.error(f"[BITACORA] Error generando PDF masivo: {error}")
+            return jsonify({
+                'success': False,
+                'message': error
+            }), 500
+        
+        # Enviar PDF
+        logger.info(f"[BITACORA] PDF masivo generado exitosamente ({len(num_trabajadores)} trabajadores)")
+        return send_file(
+            buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f'registro_checadas_{len(num_trabajadores)}trabajadores_{fecha_inicio}_{fecha_fin}.pdf'
+        )
+        
+    except Exception as e:
+        logger.error(f"[BITACORA] Error en generar_pdf_masivo(): {str(e)}")
+        logger.error(f"[BITACORA] Traceback: {__import__('traceback').format_exc()}")
+        return jsonify({
+            'success': False,
+            'message': f'Error al generar PDF masivo: {str(e)}'
+        }), 500
+
+
+@bitacora_bp.route('/procesar-masivo', methods=['POST'])
+def procesar_masivo():
+    """Procesar bitácora para múltiples trabajadores"""
+    try:
+        logger.info("[BITACORA] POST /procesar-masivo - Iniciando procesamiento masivo")
+        
+        data = request.get_json()
+        logger.info(f"[BITACORA] Data recibida: {data}")
+        
+        # Validar datos
+        num_trabajadores = data.get('num_trabajadores', [])
+        fecha_inicio_str = data.get('fecha_inicio')
+        fecha_fin_str = data.get('fecha_fin')
+        
+        if not num_trabajadores or not isinstance(num_trabajadores, list):
+            return jsonify({
+                'success': False,
+                'message': 'Debe proporcionar una lista de trabajadores'
+            }), 400
+        
+        if not fecha_inicio_str or not fecha_fin_str:
+            return jsonify({
+                'success': False,
+                'message': 'Debe proporcionar fechas de inicio y fin'
+            }), 400
+        
+        # Convertir fechas
+        from datetime import datetime
+        fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
+        fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
+        
+        logger.info(f"[BITACORA] Procesando {len(num_trabajadores)} trabajadores")
+        logger.info(f"[BITACORA] Período: {fecha_inicio} a {fecha_fin}")
+        
+        # Procesar
+        resultados, error = procesar_bitacora_masivo_use_case.ejecutar(
+            num_trabajadores=num_trabajadores,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin
+        )
+        
+        if error:
+            logger.error(f"[BITACORA] Error en procesamiento masivo: {error}")
+            return jsonify({
+                'success': False,
+                'message': error
+            }), 500
+        
+        # Calcular totales
+        total_exitosos = sum(1 for r in resultados if r['success'])
+        total_fallidos = len(resultados) - total_exitosos
+        total_insertados = sum(r['stats']['insertados'] for r in resultados if r['success'])
+        total_actualizados = sum(r['stats']['actualizados'] for r in resultados if r['success'])
+        total_registros = sum(r['total_registros'] for r in resultados if r['success'])
+        
+        mensaje = f"Procesamiento completado: {total_exitosos} trabajadores procesados exitosamente"
+        if total_fallidos > 0:
+            mensaje += f", {total_fallidos} con errores"
+        
+        logger.info(f"[BITACORA] {mensaje}")
+        logger.info(f"[BITACORA] Total: {total_insertados} nuevos, {total_actualizados} actualizados, {total_registros} registros")
+        
+        return jsonify({
+            'success': True,
+            'message': mensaje,
+            'resultados': resultados,
+            'totales': {
+                'exitosos': total_exitosos,
+                'fallidos': total_fallidos,
+                'insertados': total_insertados,
+                'actualizados': total_actualizados,
+                'total_registros': total_registros
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"[BITACORA] Error en procesar_masivo(): {str(e)}")
+        logger.error(f"[BITACORA] Traceback: {__import__('traceback').format_exc()}")
+        return jsonify({
+            'success': False,
+            'message': f'Error al procesar bitácora masiva: {str(e)}'
+        }), 500
+
