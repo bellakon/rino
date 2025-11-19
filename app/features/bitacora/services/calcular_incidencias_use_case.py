@@ -51,31 +51,56 @@ class CalcularIncidenciasUseCase:
             Dict con: codigo_incidencia, tipo_movimiento, minutos_retardo, 
                      horas_trabajadas, descripcion_incidencia
         """
-        # Si tiene movimiento, es J o L
+        # Si tiene movimiento, usar la letra como código de incidencia y nomenclatura en tipo_movimiento
         if movimiento and movimiento.get('tiene_movimiento'):
-            categoria = movimiento.get('categoria', '')
-            if 'Licencia' in categoria:
+            letra_codigo = movimiento.get('letra', '').upper()  # Letra para código (J, L, A)
+            nomenclatura = movimiento.get('tipo_movimiento', '')  # Nomenclatura (OT, COM001, etc.)
+            tipo_nombre = movimiento.get('tipo_nombre', '')
+            
+            # La letra es el código de incidencia (J, L, A)
+            # La nomenclatura va en tipo_movimiento (OT, COM001, etc.)
+            # Validar que sea una letra válida
+            if letra_codigo in ['L', 'J', 'A']:
                 return {
-                    'codigo_incidencia': 'L',
-                    'tipo_movimiento': movimiento.get('tipo_movimiento'),
+                    'codigo_incidencia': letra_codigo,  # L, J, o A según la letra
+                    'tipo_movimiento': nomenclatura,  # Nomenclatura del tipo (OT, COM001, etc.)
                     'minutos_retardo': 0,
                     'horas_trabajadas': Decimal('0.00'),
-                    'descripcion_incidencia': f"Licencia: {movimiento.get('tipo_nombre')}"
+                    'descripcion_incidencia': f"{tipo_nombre}"
                 }
             else:
+                # Fallback por si no es L, J, o A
                 return {
                     'codigo_incidencia': 'J',
-                    'tipo_movimiento': movimiento.get('tipo_movimiento'),
+                    'tipo_movimiento': nomenclatura,
                     'minutos_retardo': 0,
                     'horas_trabajadas': Decimal('0.00'),
-                    'descripcion_incidencia': f"Justificado: {movimiento.get('tipo_nombre')}"
+                    'descripcion_incidencia': f"Justificado: {tipo_nombre}"
                 }
         
-        # Sin checadas = FALTA
-        if not checadas.get('tiene_checadas'):
+        # Sin checadas O sin entrada
+        if not checadas.get('tiene_checadas') or not checadas.get('checada1'):
+            # Debug: verificar si se perdieron las checadas
+            if checadas.get('tiene_checadas') and not checadas.get('checada1'):
+                print(f"[WARNING] tiene_checadas=True pero checada1=None")
+                print(f"  - Checadas originales: {checadas.get('num_checadas_originales', 0)}")
+                print(f"  - Checadas filtradas: {checadas.get('num_checadas', 0)}")
+                print(f"  - Se filtraron: {checadas.get('se_filtraron_duplicadas', False)}")
+            
+            # TEMPORAL: Si es descanso sin checadas, marcar como Omisión en lugar de Falta
+            # para que se pueda identificar en el reporte
+            if horario_esperado == '00:00-00:00':
+                return {
+                    'codigo_incidencia': 'O',
+                    'tipo_movimiento': None,
+                    'minutos_retardo': 0,
+                    'horas_trabajadas': Decimal('0.00'),
+                    'descripcion_incidencia': 'Descanso - Sin checadas'
+                }
+            
             return {
                 'codigo_incidencia': 'F',
-                'tipo_movimiento': None,
+                'tipo_movimiento': 'FNA',
                 'minutos_retardo': 0,
                 'horas_trabajadas': Decimal('0.00'),
                 'descripcion_incidencia': 'Falta - No marcó asistencia'
@@ -153,7 +178,7 @@ class CalcularIncidenciasUseCase:
         if not checada1:
             return {
                 'codigo_incidencia': 'F',
-                'tipo_movimiento': None,
+                'tipo_movimiento': 'FNA',
                 'minutos_retardo': 0,
                 'horas_trabajadas': Decimal('0.00'),
                 'descripcion_incidencia': 'Falta - No marcó entrada'
@@ -171,7 +196,7 @@ class CalcularIncidenciasUseCase:
             if minutos_antes > bitacora_config.MINUTOS_ANTES_PERMITIDOS:
                 return {
                     'codigo_incidencia': 'F',
-                    'tipo_movimiento': None,
+                    'tipo_movimiento': 'FET',
                     'minutos_retardo': 0,
                     'horas_trabajadas': Decimal('0.00'),
                     'descripcion_incidencia': f'Falta - Entrada demasiado temprana ({minutos_antes} min antes)'
@@ -179,7 +204,7 @@ class CalcularIncidenciasUseCase:
         
         # Calcular código de retardo para entrada
         minutos_tarde = max(0, minutos_diferencia_entrada)
-        codigo_entrada = bitacora_config.calcular_codigo_retardo(minutos_tarde)
+        codigo_entrada, tipo_movimiento_entrada = bitacora_config.calcular_codigo_retardo(minutos_tarde)
         
         # Si no marcó salida = OMISIÓN
         if not checada2:
@@ -197,7 +222,7 @@ class CalcularIncidenciasUseCase:
             salida_esperada
         )
         
-        codigo_salida, desc_salida = bitacora_config.validar_salida(
+        codigo_salida, tipo_movimiento_salida, desc_salida = bitacora_config.validar_salida(
             minutos_diferencia_salida, 
             es_docente
         )
@@ -208,13 +233,16 @@ class CalcularIncidenciasUseCase:
         # Determinar código final (el peor de entrada y salida)
         codigo_final = self._codigo_mas_grave(codigo_entrada, codigo_salida)
         
+        # Determinar tipo de movimiento final (prioritario entrada sobre salida)
+        tipo_movimiento_final = tipo_movimiento_entrada or tipo_movimiento_salida
+        
         # Generar descripción
-        desc_entrada = self._generar_descripcion_entrada(codigo_entrada, minutos_tarde)
+        desc_entrada = self._generar_descripcion_entrada(codigo_entrada, minutos_tarde, tipo_movimiento_entrada)
         descripcion = f"{desc_entrada}. {desc_salida}" if desc_salida != 'Asistencia' else desc_entrada
         
         return {
             'codigo_incidencia': codigo_final,
-            'tipo_movimiento': None,
+            'tipo_movimiento': tipo_movimiento_final,
             'minutos_retardo': minutos_tarde,
             'horas_trabajadas': horas_trabajadas,
             'descripcion_incidencia': descripcion
@@ -242,7 +270,7 @@ class CalcularIncidenciasUseCase:
         if not checada1:
             return {
                 'codigo_incidencia': 'F',
-                'tipo_movimiento': None,
+                'tipo_movimiento': 'FNA',
                 'minutos_retardo': 0,
                 'horas_trabajadas': Decimal('0.00'),
                 'descripcion_incidencia': 'Falta - No marcó primera entrada'
@@ -265,12 +293,15 @@ class CalcularIncidenciasUseCase:
                 resultado_bloque2['codigo_incidencia']
             )
             
+            # Tipo de movimiento combinado (prioritario bloque1)
+            tipo_movimiento_final = resultado_bloque1.get('tipo_movimiento') or resultado_bloque2.get('tipo_movimiento')
+            
             horas_totales = resultado_bloque1['horas_trabajadas'] + resultado_bloque2['horas_trabajadas']
             minutos_totales = resultado_bloque1['minutos_retardo'] + resultado_bloque2['minutos_retardo']
             
             return {
                 'codigo_incidencia': codigo_final,
-                'tipo_movimiento': None,
+                'tipo_movimiento': tipo_movimiento_final,
                 'minutos_retardo': minutos_totales,
                 'horas_trabajadas': horas_totales,
                 'descripcion_incidencia': f"Bloque 1: {resultado_bloque1['descripcion_incidencia']}. Bloque 2: {resultado_bloque2['descripcion_incidencia']}"
@@ -292,6 +323,7 @@ class CalcularIncidenciasUseCase:
         if not entrada_checada:
             return {
                 'codigo_incidencia': 'F',
+                'tipo_movimiento': 'FNA',
                 'minutos_retardo': 0,
                 'horas_trabajadas': Decimal('0.00'),
                 'descripcion_incidencia': f'Falta - No marcó entrada en {nombre_bloque}'
@@ -299,21 +331,23 @@ class CalcularIncidenciasUseCase:
         
         minutos_diferencia = self._calcular_diferencia_minutos(entrada_checada, entrada_esperada)
         minutos_tarde = max(0, minutos_diferencia)
-        codigo = bitacora_config.calcular_codigo_retardo(minutos_tarde)
+        codigo, tipo_movimiento = bitacora_config.calcular_codigo_retardo(minutos_tarde)
         
         if not salida_checada:
             return {
                 'codigo_incidencia': 'O',
+                'tipo_movimiento': None,
                 'minutos_retardo': minutos_tarde,
                 'horas_trabajadas': Decimal('0.00'),
                 'descripcion_incidencia': f'Omisión - No marcó salida en {nombre_bloque}'
             }
         
         horas = self._calcular_horas_trabajadas(entrada_checada, salida_checada)
-        desc = self._generar_descripcion_entrada(codigo, minutos_tarde)
+        desc = self._generar_descripcion_entrada(codigo, minutos_tarde, tipo_movimiento)
         
         return {
             'codigo_incidencia': codigo,
+            'tipo_movimiento': tipo_movimiento,
             'minutos_retardo': minutos_tarde,
             'horas_trabajadas': horas,
             'descripcion_incidencia': desc
@@ -338,7 +372,7 @@ class CalcularIncidenciasUseCase:
         gravedad = {'F': 5, 'O': 4, 'R+': 3, 'ST': 2, 'R-': 1, 'A': 0}
         return codigo1 if gravedad.get(codigo1, 0) >= gravedad.get(codigo2, 0) else codigo2
     
-    def _generar_descripcion_entrada(self, codigo: str, minutos_tarde: int) -> str:
+    def _generar_descripcion_entrada(self, codigo: str, minutos_tarde: int, tipo_movimiento: str = None) -> str:
         """Genera descripción legible del código de entrada"""
         if codigo == 'A':
             return 'Asistencia'
@@ -347,7 +381,17 @@ class CalcularIncidenciasUseCase:
         elif codigo == 'R+':
             return f'Retardo Mayor ({minutos_tarde} min)'
         elif codigo == 'F':
-            return f'Falta ({minutos_tarde} min tarde)'
+            # Describir según el tipo de movimiento (falta)
+            if tipo_movimiento == 'FRT':
+                return f'Falta por retardo excesivo ({minutos_tarde} min tarde)'
+            elif tipo_movimiento == 'FNA':
+                return 'Falta - No marcó asistencia'
+            elif tipo_movimiento == 'FST':
+                return 'Falta por salida muy tardía'
+            elif tipo_movimiento == 'FET':
+                return 'Falta - Entrada demasiado temprana'
+            else:
+                return 'Falta'
         return 'Incidencia'
 
 

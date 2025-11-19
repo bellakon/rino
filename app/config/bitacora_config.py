@@ -3,7 +3,7 @@ Configuración de reglas para cálculo de incidencias en bitácora
 """
 
 # ============================================
-# CÓDIGOS DE INCIDENCIA
+# CÓDIGOS DE INCIDENCIA (COLUMNA CÓDIGO)
 # ============================================
 CODIGOS_INCIDENCIA = {
     'A': 'Asistencia',
@@ -14,6 +14,16 @@ CODIGOS_INCIDENCIA = {
     'ST': 'Salida Temprana',
     'J': 'Justificado',
     'L': 'Licencia'
+}
+
+# ============================================
+# TIPOS DE FALTA (COLUMNA MOVIMIENTOS)
+# ============================================
+TIPOS_FALTA = {
+    'FNA': 'Falta - No marcó asistencia',
+    'FRT': 'Falta por retardo excesivo (más de 30 min)',
+    'FST': 'Falta por salida muy tardía (más de 30 min)',
+    'FET': 'Falta - Entrada demasiado temprana'
 }
 
 # ============================================
@@ -39,7 +49,7 @@ MINUTOS_RETARDO_MAYOR_MIN = 17
 MINUTOS_RETARDO_MAYOR_MAX = 30
 
 # Más de este tiempo después de la hora de entrada = FALTA
-# Ejemplo: 8:31 en adelante es falta
+# Ejemplo: 8:31 en adelante es falta por retardo
 MINUTOS_FALTA = 31
 
 # Tolerancia de salida (puede salir antes sin incidencia) - SOLO NO DOCENTES
@@ -53,6 +63,13 @@ TOLERANCIA_SALIDA_DOCENTE_MINUTOS = 0
 # Máximo de minutos tarde para salida antes de ser FALTA
 # Ejemplo: Si salida es 16:00, hasta 16:30 es válido, 16:31 es falta
 MINUTOS_SALIDA_TARDE_MAX = 30
+
+# ============================================
+# DETECCIÓN DE CHECADAS DUPLICADAS
+# ============================================
+# Máximo de segundos entre checadas para considerarlas duplicadas
+# Ejemplo: 09:16:00 y 09:16:56 (56 segundos) son la misma checada
+SEGUNDOS_MAX_CHECADAS_DUPLICADAS = 60  # 1 minuto
 
 # ============================================
 # REGLAS POR TIPO DE PLAZA
@@ -87,24 +104,26 @@ def validar_entrada_temprana(minutos_diferencia: int) -> bool:
     """
     return minutos_diferencia <= MINUTOS_ANTES_PERMITIDOS
 
-def calcular_codigo_retardo(minutos_tarde: int) -> str:
+def calcular_codigo_retardo(minutos_tarde: int) -> tuple:
     """
-    Calcula el código de incidencia según minutos de retardo
+    Calcula el código de incidencia y tipo de falta según minutos de retardo
     
     Args:
         minutos_tarde: Minutos DESPUÉS de la hora de entrada
     
     Returns:
-        Código de incidencia: 'A', 'R-', 'R+', o 'F'
+        tuple: (codigo_incidencia, tipo_falta)
+        - codigo_incidencia: 'A', 'R-', 'R+', o 'F' (para columna Código)
+        - tipo_falta: 'FRT' o None (para columna Movimientos)
     """
     if minutos_tarde <= TOLERANCIA_ENTRADA_MINUTOS:
-        return 'A'  # Asistencia normal
+        return ('A', None)  # Asistencia normal
     elif MINUTOS_RETARDO_MENOR_MIN <= minutos_tarde <= MINUTOS_RETARDO_MENOR_MAX:
-        return 'R-'  # Retardo menor
+        return ('R-', None)  # Retardo menor
     elif MINUTOS_RETARDO_MAYOR_MIN <= minutos_tarde <= MINUTOS_RETARDO_MAYOR_MAX:
-        return 'R+'  # Retardo mayor
+        return ('R+', None)  # Retardo mayor
     else:
-        return 'F'  # Falta
+        return ('F', 'FRT')  # Falta por retardo excesivo
 
 def validar_salida(minutos_diferencia: int, es_docente_plaza: bool) -> tuple:
     """
@@ -115,14 +134,14 @@ def validar_salida(minutos_diferencia: int, es_docente_plaza: bool) -> tuple:
         es_docente_plaza: True si es docente
     
     Returns:
-        tuple: (codigo_incidencia, descripcion)
+        tuple: (codigo_incidencia, tipo_falta, descripcion)
     """
     # Salió tarde
     if minutos_diferencia > 0:
         if minutos_diferencia > MINUTOS_SALIDA_TARDE_MAX:
-            return ('F', f'Salida {minutos_diferencia} minutos tarde (más de {MINUTOS_SALIDA_TARDE_MAX} min)')
+            return ('F', 'FST', f'Salida {minutos_diferencia} minutos tarde (más de {MINUTOS_SALIDA_TARDE_MAX} min)')
         else:
-            return ('A', 'Asistencia (salida dentro de tolerancia)')
+            return ('A', None, 'Asistencia (salida dentro de tolerancia)')
     
     # Salió temprano
     minutos_temprano = abs(minutos_diferencia)
@@ -130,15 +149,15 @@ def validar_salida(minutos_diferencia: int, es_docente_plaza: bool) -> tuple:
     if es_docente_plaza:
         # Docentes NO pueden salir antes
         if minutos_temprano > TOLERANCIA_SALIDA_DOCENTE_MINUTOS:
-            return ('ST', f'Salida temprana: {minutos_temprano} minutos antes')
+            return ('ST', None, f'Salida temprana: {minutos_temprano} minutos antes')
         else:
-            return ('A', 'Asistencia')
+            return ('A', None, 'Asistencia')
     else:
         # No docentes tienen tolerancia
         if minutos_temprano <= TOLERANCIA_SALIDA_NO_DOCENTE_MINUTOS:
-            return ('A', 'Asistencia')
+            return ('A', None, 'Asistencia')
         else:
-            return ('ST', f'Salida temprana: {minutos_temprano} minutos antes')
+            return ('ST', None, f'Salida temprana: {minutos_temprano} minutos antes')
 
 # ============================================
 # DESCRIPCIÓN DE REGLAS (para mostrar al usuario)

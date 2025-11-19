@@ -55,28 +55,18 @@ class ProcesarBitacoraUseCase:
             
             # 3. Procesar día por día
             registros = []
-            stats = {'insertados': 0, 'actualizados': 0, 'errores': 0}
+            stats = {'insertados': 0, 'actualizados': 0, 'errores': 0, 'saltados_descanso': 0}
             fecha_actual = fecha_inicio
+            
+            print(f"[INFO] Iniciando procesamiento de bitácora del trabajador {num_trabajador}")
+            print(f"[INFO] Rango de fechas: {fecha_inicio} a {fecha_fin}")
             
             while fecha_actual <= fecha_fin:
                 # Obtener horario del día de la semana
                 dia_semana = fecha_actual.weekday()  # 0=Lunes, 6=Domingo
                 horario_dia = horario_asignado['horarios_por_dia'].get(dia_semana)
                 
-                # Si no tiene horario ese día, pasar al siguiente
-                if not horario_dia or horario_dia == 'Descanso':
-                    fecha_actual += timedelta(days=1)
-                    continue
-                
-                # Obtener checadas del día
-                checadas, error = obtener_checadas_dia_use_case.ejecutar(
-                    num_trabajador, fecha_actual
-                )
-                if error:
-                    print(f"[WARNING] Error obteniendo checadas {fecha_actual}: {error}")
-                    checadas = {'tiene_checadas': False}
-                
-                # Obtener movimiento del día (si existe)
+                # Verificar si hay movimiento PRIMERO (antes de saltar por descanso)
                 movimiento, error = obtener_movimiento_dia_use_case.ejecutar(
                     num_trabajador, fecha_actual
                 )
@@ -84,7 +74,21 @@ class ProcesarBitacoraUseCase:
                     print(f"[WARNING] Error obteniendo movimiento {fecha_actual}: {error}")
                     movimiento = None
                 
-                # Calcular incidencias
+                # TEMPORAL: Procesar TODOS los días incluyendo descansos para debugging
+                # Si es descanso, usar horario ficticio
+                if not horario_dia or horario_dia.upper() == 'DESCANSO':
+                    horario_dia = '00:00-00:00'  # Horario ficticio para debugging
+                    print(f"[DEBUG] Día {fecha_actual} ({['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][dia_semana]}) es DESCANSO - procesando para debug")
+                
+                # Obtener checadas del día (con lógica inteligente)
+                checadas, error = obtener_checadas_dia_use_case.ejecutar(
+                    num_trabajador, fecha_actual, horario_dia
+                )
+                if error:
+                    print(f"[WARNING] Error obteniendo checadas {fecha_actual}: {error}")
+                    checadas = {'tiene_checadas': False}
+                
+                # Calcular incidencias (movimiento ya se obtuvo arriba)
                 resultado = calcular_incidencias_use_case.ejecutar(
                     checadas=checadas,
                     horario_esperado=horario_dia,
@@ -116,7 +120,10 @@ class ProcesarBitacoraUseCase:
                 # Validar
                 es_valido, error_validacion = registro.validar()
                 if not es_valido:
-                    print(f"[WARNING] Registro inválido {fecha_actual}: {error_validacion}")
+                    print(f"[ERROR] Registro inválido {fecha_actual}: {error_validacion}")
+                    print(f"  - Código: {registro.codigo_incidencia}, Tipo Mov: {registro.tipo_movimiento}")
+                    print(f"  - Checada1: {registro.checada1}, Checada2: {registro.checada2}")
+                    print(f"  - Movimiento: {movimiento}")
                     stats['errores'] += 1
                     fecha_actual += timedelta(days=1)
                     continue
@@ -127,6 +134,8 @@ class ProcesarBitacoraUseCase:
                     print(f"[ERROR] Error guardando registro {fecha_actual}: {error}")
                     stats['errores'] += 1
                 else:
+                    accion = "actualizado" if fue_actualizado else "insertado"
+                    print(f"[OK] {fecha_actual} ({['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][dia_semana]}) {accion}: {registro.codigo_incidencia} - {registro.descripcion_incidencia[:50]}")
                     if fue_actualizado:
                         stats['actualizados'] += 1
                     else:
@@ -134,6 +143,18 @@ class ProcesarBitacoraUseCase:
                     registros.append(registro)
                 
                 fecha_actual += timedelta(days=1)
+            
+            # Resumen final
+            total_dias = (fecha_fin - fecha_inicio).days + 1
+            dias_procesados = stats['insertados'] + stats['actualizados']
+            print(f"\n[INFO] Resumen de procesamiento trabajador {num_trabajador}:")
+            print(f"  Total de días en rango: {total_dias}")
+            print(f"  Días procesados: {dias_procesados}")
+            print(f"  - Insertados: {stats['insertados']}")
+            print(f"  - Actualizados: {stats['actualizados']}")
+            print(f"  Días saltados (descanso): {stats['saltados_descanso']}")
+            print(f"  Errores: {stats['errores']}")
+            print(f"  Días sin procesar: {total_dias - dias_procesados - stats['saltados_descanso']}\n")
             
             return (registros, stats), None
             

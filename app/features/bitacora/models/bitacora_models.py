@@ -78,9 +78,10 @@ class BitacoraRecord:
         if self.codigo_incidencia not in codigos_validos:
             return False, f"Código de incidencia inválido. Debe ser uno de: {', '.join(codigos_validos)}"
         
-        # Si es J o L, debe tener tipo_movimiento
+        # Si es J o L (movimientos especiales), debe tener tipo_movimiento con la nomenclatura
+        # A (Asistencia) puede tener tipo_movimiento si es movimiento especial, pero no es obligatorio
         if self.codigo_incidencia in ['J', 'L'] and not self.tipo_movimiento:
-            return False, "Código J o L requiere especificar tipo_movimiento"
+            return False, f"Código {self.codigo_incidencia} requiere especificar tipo_movimiento (nomenclatura)"
         
         # Validar minutos de retardo
         if self.minutos_retardo < 0:

@@ -680,9 +680,13 @@ function mostrarResultados(registros, mensaje, stats) {
     registros.forEach(reg => {
         const tr = document.createElement('tr');
         
-        // Mostrar solo el tipo de movimiento (sin el código)
+        // Columna Movimientos: mostrar tipo_movimiento según el código
         let movimientoTexto = '-';
-        if (reg.tipo_movimiento && (reg.codigo_incidencia === 'J' || reg.codigo_incidencia === 'L')) {
+        if (reg.codigo_incidencia === 'F' && reg.tipo_movimiento) {
+            // Si es falta, mostrar el tipo de falta (FNA, FRT, FST, FET)
+            movimientoTexto = `<span class="badge bg-danger">${reg.tipo_movimiento}</span>`;
+        } else if (reg.tipo_movimiento && (reg.codigo_incidencia === 'J' || reg.codigo_incidencia === 'L' || reg.codigo_incidencia === 'A')) {
+            // Si es justificado, licencia o asistencia especial, mostrar el tipo de movimiento
             movimientoTexto = reg.tipo_movimiento;
         }
         

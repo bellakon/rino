@@ -39,7 +39,8 @@ class ObtenerMovimientoDiaUseCase:
                     m.observaciones,
                     tm.nomenclatura,
                     tm.nombre as tipo_nombre,
-                    tm.categoria
+                    tm.categoria,
+                    tm.letra
                 FROM movimientos m
                 INNER JOIN tipos_movimientos tm ON m.tipo_movimiento_id = tm.id
                 WHERE m.num_trabajador = %s
@@ -63,9 +64,10 @@ class ObtenerMovimientoDiaUseCase:
             return {
                 'tiene_movimiento': True,
                 'movimiento_id': movimiento['id'],
-                'tipo_movimiento': movimiento['nomenclatura'],
+                'tipo_movimiento': movimiento['nomenclatura'],  # Nomenclatura (OT, COM001, etc.)
                 'tipo_nombre': movimiento['tipo_nombre'],
                 'categoria': movimiento['categoria'],
+                'letra': movimiento['letra'],  # Letra para código de incidencia (J, L, A)
                 'fecha_inicio': movimiento['fecha_inicio'],
                 'fecha_fin': movimiento['fecha_fin'],
                 'observaciones': movimiento['observaciones']
