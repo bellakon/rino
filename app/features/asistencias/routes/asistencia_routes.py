@@ -7,11 +7,14 @@ from app.features.asistencias.services.obtener_asistencias_use_case import obten
 from app.features.asistencias.services.importar_checadas_use_case import importar_checadas_use_case
 import math
 import json
-import pickle
-import base64
+import uuid
 
 # Crear blueprint
 asistencias_bp = Blueprint('asistencias', __name__, url_prefix='/asistencias')
+
+# Cache temporal para guardar checadas entre requests (mejor que sesión)
+# Key: session_id, Value: checadas_pendientes
+_checadas_cache = {}
 
 
 @asistencias_bp.route('/')
@@ -108,18 +111,26 @@ def importar_checadas():
         except Exception as e:
             return jsonify({'error': f'Error al leer archivo: {str(e)}'}), 400
     
+    # Crear nueva instancia del caso de uso para este request
+    from app.features.asistencias.services.importar_checadas_use_case import ImportarChecadasUseCase
+    caso_uso = ImportarChecadasUseCase()
+    
+    # Generar ID único para esta sesión de importación
+    import_session_id = str(uuid.uuid4())
+    
     # Función generadora para SSE (análisis solamente)
     def generar_eventos():
         """Genera eventos SSE con progreso de análisis"""
         try:
-            for progreso in importar_checadas_use_case.ejecutar(archivo_contenido):
-                # Si llegamos a la fase de preview, guardar checadas en sesión
+            for progreso in caso_uso.ejecutar(archivo_contenido):
+                # Si llegamos a la fase de preview, guardar en cache
                 if progreso.get('requiere_confirmacion'):
-                    # Obtener checadas nuevas del caso de uso
-                    # (debemos pasarlas al frontend para que las envíe de vuelta)
-                    yield f"data: {json.dumps(progreso)}\n\n"
-                else:
-                    yield f"data: {json.dumps(progreso)}\n\n"
+                    # Guardar checadas en cache temporal
+                    _checadas_cache[import_session_id] = caso_uso.checadas_pendientes
+                    # Enviar session_id al frontend
+                    progreso['import_session_id'] = import_session_id
+                
+                yield f"data: {json.dumps(progreso)}\n\n"
         except Exception as e:
             # Error no capturado en el caso de uso
             yield f"data: {json.dumps({'error': str(e), 'finalizado': True})}\n\n"
@@ -139,15 +150,21 @@ def importar_checadas():
 def importar_confirmar():
     """
     Confirma e inserta checadas después del preview
-    Recibe las checadas validadas desde el frontend
+    Obtiene las checadas desde el cache (no desde el frontend)
     """
     
+    # Obtener import_session_id del body
     data = request.get_json()
+    if not data or 'import_session_id' not in data:
+        return jsonify({'error': 'No se proporcionó import_session_id'}), 400
     
-    if not data or 'checadas' not in data:
-        return jsonify({'error': 'No se enviaron datos para insertar'}), 400
+    import_session_id = data['import_session_id']
     
-    checadas_nuevas = data['checadas']
+    # Obtener checadas desde cache
+    if import_session_id not in _checadas_cache:
+        return jsonify({'error': 'No hay checadas pendientes. Por favor analice el archivo nuevamente.'}), 400
+    
+    checadas_nuevas = _checadas_cache[import_session_id]
     
     if not isinstance(checadas_nuevas, list) or len(checadas_nuevas) == 0:
         return jsonify({'error': 'Lista de checadas inválida o vacía'}), 400
@@ -158,6 +175,10 @@ def importar_confirmar():
         try:
             for progreso in importar_checadas_use_case.ejecutar_insercion(checadas_nuevas):
                 yield f"data: {json.dumps(progreso)}\n\n"
+            
+            # Limpiar cache después de insertar
+            _checadas_cache.pop(import_session_id, None)
+            
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e), 'finalizado': True})}\n\n"
     

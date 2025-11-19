@@ -518,15 +518,16 @@
 
 <script>
 let eventSourceImportacion = null;
-let checadasParaInsertar = null; // Guardar checadas validadas para confirmar
-let datosPreview = null; // Guardar datos completos del preview
+let datosPreview = null; // Guardar datos completos del preview (solo para UI)
+let importSessionId = null; // ID de sesión para recuperar checadas del servidor
 let paginaNuevos = 1;
 let paginaInvalidas = 1;
 const registrosPorPagina = 50;
 
 function mostrarModalImportar() {
     // Resetear modal
-    checadasParaInsertar = null;
+    datosPreview = null;
+    importSessionId = null;
     document.getElementById('selectorArchivo').style.display = 'block';
     document.getElementById('progresoImportacion').style.display = 'none';
     document.getElementById('previewConfirmacion').style.display = 'none';
@@ -714,13 +715,13 @@ function mostrarPreviewConfirmacion(data) {
     console.log('Mostrando preview de confirmación:', data);
     
     try {
-        // Guardar datos completos
-        checadasParaInsertar = data.checadas_nuevas;
+        // Guardar datos de preview y session_id
         datosPreview = data;
+        importSessionId = data.import_session_id; // Guardar ID de sesión
         paginaNuevos = 1;
         paginaInvalidas = 1;
         
-        console.log('Checadas para insertar:', checadasParaInsertar.length);
+        console.log('Import Session ID:', importSessionId);
         
         // En lugar de ocultar todo progresoImportacion, solo ocultamos los elementos de progreso
         document.getElementById('estadoImportacion').style.display = 'none';
@@ -888,8 +889,13 @@ function mostrarErroresAgrupados(errores) {
 }
 
 async function confirmarImportacion() {
-    if (!checadasParaInsertar || checadasParaInsertar.length === 0) {
+    if (!datosPreview || !datosPreview.resumen || datosPreview.resumen.nuevas === 0) {
         alert('No hay checadas para insertar');
+        return;
+    }
+    
+    if (!importSessionId) {
+        alert('Error: No se encontró el ID de sesión de importación');
         return;
     }
     
@@ -912,13 +918,14 @@ async function confirmarImportacion() {
     document.getElementById('insertadasImportacion').textContent = '0';
     
     try {
+        // Enviar solo el import_session_id para que el backend recupere las checadas
         const response = await fetch('/asistencias/importar-confirmar', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                checadas: checadasParaInsertar
+                import_session_id: importSessionId
             })
         });
         
@@ -958,7 +965,6 @@ async function confirmarImportacion() {
 }
 
 function cancelarImportacion() {
-    checadasParaInsertar = null;
     datosPreview = null;
     paginaNuevos = 1;
     paginaInvalidas = 1;

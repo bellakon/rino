@@ -28,14 +28,18 @@ class ImportarChecadasUseCase:
         """
         
         yield {
-            'estado': 'Leyendo archivo...',
+            'estado': 'Analizando archivo...',
             'progreso': 5,
             'fase': 'lectura'
         }
         
-        # Parsear archivo CSV
+        # Dividir en líneas sin cargar todo en memoria (para archivos grandes)
+        # Procesar en chunks para no saturar memoria
         lineas_raw = archivo_contenido.strip().split('\n')
         total_lineas = len(lineas_raw)
+        
+        # Liberar memoria del contenido original
+        del archivo_contenido
         
         if total_lineas == 0:
             yield {
@@ -55,6 +59,7 @@ class ImportarChecadasUseCase:
         checadas_parseadas = []
         lineas_invalidas = []
         ultimo_yield_en = 0
+        ultimo_checador = None  # Para registros sin checador, usar el último encontrado
         
         for idx, linea in enumerate(lineas_raw, start=1):
             # Saltar líneas vacías
@@ -76,17 +81,22 @@ class ImportarChecadasUseCase:
                 reader = csv.reader([linea])
                 campos = next(reader)
                 
-                if len(campos) != 4:
+                # Manejar registros con 3 o 4 campos
+                if len(campos) == 3:
+                    # Si falta checador, usar el último encontrado o valor por defecto
+                    num_trabajador, fecha, hora = campos
+                    checador = ultimo_checador if ultimo_checador else 'DESCONOCIDO'
+                elif len(campos) == 4:
+                    num_trabajador, fecha, hora, checador = campos
+                else:
                     lineas_invalidas.append({
                         'linea': idx,
-                        'contenido': linea[:100],  # Limitar a 100 caracteres
-                        'error': f'Esperados 4 campos, encontrados {len(campos)}'
+                        'contenido': linea[:100],
+                        'error': f'Esperados 3 o 4 campos, encontrados {len(campos)}'
                     })
                     continue
                 
-                num_trabajador, fecha, hora, checador = campos
-                
-                # Validar num_trabajador
+                # Validar y limpiar num_trabajador (quitar ceros a la izquierda)
                 num_trabajador = num_trabajador.strip()
                 if not num_trabajador:
                     lineas_invalidas.append({
@@ -103,6 +113,9 @@ class ImportarChecadasUseCase:
                         'error': f'num_trabajador debe ser numérico (recibido: "{num_trabajador}")'
                     })
                     continue
+                
+                # Quitar ceros a la izquierda: 000348 -> 348
+                num_trabajador = str(int(num_trabajador))
                 
                 # Validar fecha (YYYY-MM-DD)
                 fecha = fecha.strip()
@@ -164,6 +177,9 @@ class ImportarChecadasUseCase:
                         'error': 'checador está vacío'
                     })
                     continue
+                
+                # Guardar el último checador válido
+                ultimo_checador = checador
                 
                 # Todo válido, agregar a lista
                 checadas_parseadas.append({
@@ -258,8 +274,13 @@ class ImportarChecadasUseCase:
             return
         
         # PREVIEW: Mostrar resumen y esperar confirmación
+        # IMPORTANTE: NO enviar todas las checadas al frontend (puede ser demasiado grande)
+        # Solo enviar preview y guardar checadas en sesión del servidor
         preview_registros = checadas_nuevas[:50]  # Primeras 50 para preview
         preview_invalidas = lineas_invalidas[:50]  # Primeras 50 inválidas
+        
+        # Guardar checadas en self para usarlas después de confirmación
+        self.checadas_pendientes = checadas_nuevas
         
         yield {
             'estado': 'Análisis completado. Esperando confirmación...',
@@ -280,9 +301,7 @@ class ImportarChecadasUseCase:
                 'lineas_invalidas': preview_invalidas,
                 'total_invalidas': len(lineas_invalidas)
             },
-            'errores_agrupados': errores_agrupados,  # Enviar estadísticas de errores
-            # Enviar checadas nuevas al frontend para que las devuelva al confirmar
-            'checadas_nuevas': checadas_nuevas
+            'errores_agrupados': errores_agrupados
         }
         
         # El usuario debe confirmar desde el frontend
