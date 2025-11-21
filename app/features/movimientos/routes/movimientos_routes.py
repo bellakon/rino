@@ -9,6 +9,7 @@ from app.features.movimientos.services.obtener_tipo_movimiento_use_case import o
 from app.features.movimientos.services.editar_tipo_movimiento_use_case import editar_tipo_movimiento_use_case
 from app.features.movimientos.services.eliminar_tipo_movimiento_use_case import eliminar_tipo_movimiento_use_case
 from app.features.movimientos.services.crear_movimiento_use_case import crear_movimiento_use_case
+from app.features.movimientos.services.crear_movimiento_masivo_use_case import crear_movimiento_masivo_use_case
 from app.features.movimientos.services.listar_movimientos_use_case import listar_movimientos_use_case
 from app.features.movimientos.services.obtener_movimiento_use_case import obtener_movimiento_use_case
 from app.features.movimientos.services.editar_movimiento_use_case import editar_movimiento_use_case
@@ -283,6 +284,63 @@ def crear_mov():
             return jsonify({'error': error}), 400
         
         return jsonify({'success': True, 'id': movimiento_id}), 201
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@movimientos_bp.route('/movimientos/crear-masivo', methods=['POST'])
+def crear_mov_masivo():
+    """Crea el mismo movimiento para múltiples trabajadores"""
+    try:
+        data = request.get_json()
+        
+        # Validar que nums_trabajadores sea una lista
+        nums_trabajadores = data.get('nums_trabajadores', [])
+        if isinstance(nums_trabajadores, str):
+            nums_trabajadores = json.loads(nums_trabajadores)
+        
+        if not isinstance(nums_trabajadores, list):
+            return jsonify({'error': 'nums_trabajadores debe ser una lista'}), 400
+        
+        # Convertir a enteros
+        try:
+            nums_trabajadores = [int(n) for n in nums_trabajadores]
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Todos los números de trabajador deben ser válidos'}), 400
+        
+        fecha_inicio = datetime.strptime(data['fecha_inicio'], '%Y-%m-%d').date()
+        fecha_fin = datetime.strptime(data['fecha_fin'], '%Y-%m-%d').date()
+        
+        datos_personalizados = {}
+        if data.get('datos_personalizados'):
+            datos_personalizados = data['datos_personalizados']
+            if isinstance(datos_personalizados, str):
+                datos_personalizados = json.loads(datos_personalizados)
+        
+        ids_creados, error = crear_movimiento_masivo_use_case.ejecutar(
+            nums_trabajadores=nums_trabajadores,
+            tipo_movimiento_id=int(data['tipo_movimiento_id']),
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+            observaciones=data.get('observaciones'),
+            datos_personalizados=datos_personalizados,
+            usuario_registro=data.get('usuario_registro', 'sistema')
+        )
+        
+        if error and not ids_creados:
+            return jsonify({'error': error}), 400
+        
+        response = {
+            'success': True,
+            'ids': ids_creados,
+            'total_creados': len(ids_creados) if ids_creados else 0
+        }
+        
+        if error:
+            response['warning'] = error
+        
+        return jsonify(response), 201
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500

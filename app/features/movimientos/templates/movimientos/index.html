@@ -117,6 +117,9 @@
                         <button type="button" class="btn btn-light btn-sm me-2" onclick="mostrarModalCrearMovimiento()">
                             <i class="bi bi-plus-circle"></i> Nuevo Movimiento
                         </button>
+                        <button type="button" class="btn btn-warning btn-sm me-2" onclick="mostrarModalMovimientoMasivo()">
+                            <i class="bi bi-people-fill"></i> Asignación Masiva
+                        </button>
                         <button type="button" class="btn btn-light btn-sm me-2" data-bs-toggle="modal" data-bs-target="#modalImportarMovimientosCSV">
                             <i class="bi bi-upload"></i> Importar CSV
                         </button>
@@ -183,6 +186,7 @@
 <!-- Modales -->
 {% include 'movimientos/modal_tipo_movimiento.html' %}
 {% include 'movimientos/modal_movimiento.html' %}
+{% include 'movimientos/modal_movimiento_masivo.html' %}
 {% include 'movimientos/modal_importar_tipos_csv.html' %}
 {% include 'movimientos/modal_importar_movimientos_csv.html' %}
 {% include 'movimientos/modal_ver_campos.html' %}
@@ -829,6 +833,280 @@ function importarTiposCSV() {
     .catch(error => {
         console.error('Error:', error);
         alert('Error al importar CSV');
+    });
+}
+
+// ==================== ASIGNACIÓN MASIVA ====================
+
+let trabajadoresMasivo = [];
+let trabajadoresSeleccionados = [];
+
+function mostrarModalMovimientoMasivo() {
+    // Limpiar formulario
+    document.getElementById('formMovimientoMasivo').reset();
+    trabajadoresSeleccionados = [];
+    actualizarContadorSeleccionados();
+    
+    // Cargar tipos de movimientos en el select
+    cargarTiposParaMasivo();
+    
+    // Cargar departamentos
+    cargarDepartamentosParaMasivo();
+    
+    // Buscar trabajadores automáticamente al abrir (todos los activos)
+    setTimeout(() => {
+        console.log('[MASIVO] Cargando trabajadores iniciales...');
+        buscarTrabajadoresMasivo();
+    }, 500);
+    
+    // Mostrar modal
+    new bootstrap.Modal(document.getElementById('modalMovimientoMasivo')).show();
+}
+
+function cargarTiposParaMasivo() {
+    fetch('/movimientos/tipos/listar?activo=true')
+        .then(response => response.json())
+        .then(tipos => {
+            const select = document.getElementById('masivoTipoMovimiento');
+            select.innerHTML = '<option value="">Seleccione un tipo...</option>';
+            tipos.forEach(tipo => {
+                select.innerHTML += `<option value="${tipo.id}">${tipo.nomenclatura} - ${tipo.nombre}</option>`;
+            });
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+function cargarDepartamentosParaMasivo() {
+    console.log('[MASIVO] Cargando departamentos...');
+    fetch('/departamentos/listar?activo=true')
+        .then(response => {
+            console.log('[MASIVO] Departamentos response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('[MASIVO] Departamentos data:', data);
+            const select = document.getElementById('filtroMasivoDepartamento');
+            select.innerHTML = '<option value="">Todos los departamentos</option>';
+            
+            // La respuesta viene como {departamentos: [...]}
+            const departamentos = data.departamentos || data;
+            
+            if (departamentos && Array.isArray(departamentos)) {
+                console.log(`[MASIVO] ${departamentos.length} departamentos encontrados`);
+                departamentos.forEach(dept => {
+                    select.innerHTML += `<option value="${dept.id}">${dept.nombre}</option>`;
+                });
+            } else {
+                console.warn('[MASIVO] No se encontraron departamentos en la respuesta');
+            }
+        })
+        .catch(error => {
+            console.error('[MASIVO] Error cargando departamentos:', error);
+        });
+}
+
+function buscarTrabajadoresMasivo() {
+    const numTrabajador = document.getElementById('filtroMasivoNumTrabajador').value;
+    const nombre = document.getElementById('filtroMasivoNombre').value;
+    const departamentoId = document.getElementById('filtroMasivoDepartamento').value;
+    
+    console.log('[MASIVO] Buscando trabajadores con filtros:', {numTrabajador, nombre, departamentoId});
+    
+    // Mostrar estado de carga
+    const tbody = document.getElementById('tablaTrabajadoresMasivo');
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="5" class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <div class="mt-2">Cargando trabajadores...</div>
+            </td>
+        </tr>
+    `;
+    
+    let url = '/trabajadores/listar?';
+    if (numTrabajador) url += `num_trabajador=${numTrabajador}&`;
+    if (nombre) url += `nombre=${nombre}&`;
+    if (departamentoId) url += `departamento_id=${departamentoId}&`;
+    
+    // Agregar activo=true para traer solo trabajadores activos
+    url += 'activo=true';
+    
+    console.log('[MASIVO] URL:', url);
+    
+    fetch(url)
+        .then(response => {
+            console.log('[MASIVO] Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('[MASIVO] Response data:', data);
+            
+            // La respuesta puede venir como {trabajadores: [...]} o directamente [...]
+            if (data.trabajadores && Array.isArray(data.trabajadores)) {
+                trabajadoresMasivo = data.trabajadores;
+                console.log(`[MASIVO] ${trabajadoresMasivo.length} trabajadores encontrados`);
+            } else if (Array.isArray(data)) {
+                trabajadoresMasivo = data;
+                console.log(`[MASIVO] ${trabajadoresMasivo.length} trabajadores encontrados (array directo)`);
+            } else {
+                trabajadoresMasivo = [];
+                console.warn('[MASIVO] No se encontraron trabajadores en la respuesta');
+            }
+            
+            renderizarTrabajadoresMasivo();
+        })
+        .catch(error => {
+            console.error('[MASIVO] Error al buscar trabajadores:', error);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center text-danger py-4">
+                        <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                        <div class="mt-2">Error al cargar trabajadores</div>
+                        <small>${error.message}</small>
+                    </td>
+                </tr>
+            `;
+        });
+}
+
+function renderizarTrabajadoresMasivo() {
+    const tbody = document.getElementById('tablaTrabajadoresMasivo');
+    
+    console.log('[MASIVO] Renderizando trabajadores:', trabajadoresMasivo.length);
+    
+    if (!trabajadoresMasivo || trabajadoresMasivo.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                    <div class="mt-2">No se encontraron trabajadores</div>
+                    <small>Intente con otros filtros o busque sin filtros</small>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = trabajadoresMasivo.map(t => {
+        const isSelected = trabajadoresSeleccionados.includes(t.num_trabajador);
+        return `
+            <tr>
+                <td class="text-center">
+                    <input type="checkbox" class="form-check-input" 
+                           value="${t.num_trabajador}" 
+                           ${isSelected ? 'checked' : ''}
+                           onchange="toggleTrabajador(this, ${t.num_trabajador})">
+                </td>
+                <td><strong>${t.num_trabajador}</strong></td>
+                <td>${t.nombre || 'Sin nombre'}</td>
+                <td>${t.departamento_nombre || '-'}</td>
+                <td><span class="badge bg-secondary">${t.tipoPlaza || '-'}</span></td>
+            </tr>
+        `;
+    }).join('');
+    
+    console.log('[MASIVO] Renderizado completado');
+}
+
+function toggleTrabajador(checkbox, numTrabajador) {
+    if (checkbox.checked) {
+        if (!trabajadoresSeleccionados.includes(numTrabajador)) {
+            trabajadoresSeleccionados.push(numTrabajador);
+        }
+    } else {
+        trabajadoresSeleccionados = trabajadoresSeleccionados.filter(n => n !== numTrabajador);
+    }
+    actualizarContadorSeleccionados();
+}
+
+function toggleTodosTrabajadores(checkbox) {
+    if (checkbox.checked) {
+        seleccionarTodosTrabajadores();
+    } else {
+        deseleccionarTodosTrabajadores();
+    }
+}
+
+function seleccionarTodosTrabajadores() {
+    trabajadoresSeleccionados = trabajadoresMasivo.map(t => t.num_trabajador);
+    renderizarTrabajadoresMasivo();
+    actualizarContadorSeleccionados();
+    document.getElementById('checkTodosMasivo').checked = true;
+}
+
+function deseleccionarTodosTrabajadores() {
+    trabajadoresSeleccionados = [];
+    renderizarTrabajadoresMasivo();
+    actualizarContadorSeleccionados();
+    document.getElementById('checkTodosMasivo').checked = false;
+}
+
+function actualizarContadorSeleccionados() {
+    document.getElementById('contadorSeleccionados').textContent = 
+        `${trabajadoresSeleccionados.length} seleccionados`;
+}
+
+function guardarMovimientoMasivo() {
+    if (trabajadoresSeleccionados.length === 0) {
+        alert('Debe seleccionar al menos un trabajador');
+        return;
+    }
+    
+    const tipoMovimientoId = document.getElementById('masivoTipoMovimiento').value;
+    const fechaInicio = document.getElementById('masivoFechaInicio').value;
+    const fechaFin = document.getElementById('masivoFechaFin').value;
+    const observaciones = document.getElementById('masivoObservaciones').value;
+    
+    if (!tipoMovimientoId) {
+        alert('Debe seleccionar un tipo de movimiento');
+        return;
+    }
+    
+    if (!fechaInicio || !fechaFin) {
+        alert('Debe especificar las fechas de inicio y fin');
+        return;
+    }
+    
+    const data = {
+        nums_trabajadores: trabajadoresSeleccionados,
+        tipo_movimiento_id: parseInt(tipoMovimientoId),
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
+        observaciones: observaciones,
+        usuario_registro: 'sistema'
+    };
+    
+    fetch('/movimientos/movimientos/crear-masivo', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+            return;
+        }
+        
+        let mensaje = `✓ Movimiento asignado exitosamente a ${data.total_creados} trabajador(es)`;
+        if (data.warning) {
+            mensaje += '\n\n⚠ Advertencia:\n' + data.warning;
+        }
+        alert(mensaje);
+        
+        bootstrap.Modal.getInstance(document.getElementById('modalMovimientoMasivo')).hide();
+        cargarMovimientos();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al guardar movimiento masivo');
     });
 }
 

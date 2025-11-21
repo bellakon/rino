@@ -46,6 +46,12 @@ def listar():
     return jsonify({'departamentos': departamentos})
 
 
+@departamentos_bp.route('/api/listar')
+def api_listar():
+    """API: Lista departamentos (alias para compatibilidad)"""
+    return listar()
+
+
 @departamentos_bp.route('/crear', methods=['POST'])
 def crear():
     """Crea un nuevo departamento"""

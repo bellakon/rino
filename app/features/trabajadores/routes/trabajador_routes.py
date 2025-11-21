@@ -285,6 +285,9 @@ def departamentos_activos():
 def listar():
     """API: Listar trabajadores para selects y otras interfaces JSON"""
     activo = request.args.get('activo')
+    num_trabajador = request.args.get('num_trabajador', type=int)
+    nombre = request.args.get('nombre')
+    departamento_id = request.args.get('departamento_id', type=int)
     
     # Construir query
     query = """
@@ -301,6 +304,7 @@ def listar():
     """
     
     params = []
+    conditions = []
     
     # Aplicar filtro de activo si se especifica
     if activo is not None:
@@ -309,9 +313,31 @@ def listar():
             activo_valor = 1
         else:
             activo_valor = 0
-        query += " WHERE t.activo = %s"
+        conditions.append("t.activo = %s")
         params.append(activo_valor)
         print(f"[LISTAR TRABAJADORES] Filtrando por activo={activo_valor}")
+    
+    # Aplicar filtro por número de trabajador
+    if num_trabajador is not None:
+        conditions.append("t.num_trabajador = %s")
+        params.append(num_trabajador)
+        print(f"[LISTAR TRABAJADORES] Filtrando por num_trabajador={num_trabajador}")
+    
+    # Aplicar filtro por nombre (búsqueda parcial)
+    if nombre:
+        conditions.append("t.nombre LIKE %s")
+        params.append(f"%{nombre}%")
+        print(f"[LISTAR TRABAJADORES] Filtrando por nombre LIKE '%{nombre}%'")
+    
+    # Aplicar filtro por departamento
+    if departamento_id is not None:
+        conditions.append("t.departamento_id = %s")
+        params.append(departamento_id)
+        print(f"[LISTAR TRABAJADORES] Filtrando por departamento_id={departamento_id}")
+    
+    # Agregar condiciones WHERE si hay filtros
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
     
     query += " ORDER BY t.nombre ASC"
     

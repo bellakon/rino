@@ -1,0 +1,116 @@
+<!-- Modal: Asignar Movimiento Masivo -->
+<div class="modal fade" id="modalMovimientoMasivo" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-people-fill"></i> Asignar Movimiento Masivo
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formMovimientoMasivo">
+                    <!-- Información del Movimiento -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-card-text"></i> Información del Movimiento</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="masivoTipoMovimiento" class="form-label">Tipo de Movimiento *</label>
+                                    <select class="form-select" id="masivoTipoMovimiento" required>
+                                        <option value="">Seleccione un tipo...</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="masivoFechaInicio" class="form-label">Fecha Inicio *</label>
+                                    <input type="date" class="form-control" id="masivoFechaInicio" required>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="masivoFechaFin" class="form-label">Fecha Fin *</label>
+                                    <input type="date" class="form-control" id="masivoFechaFin" required>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label for="masivoObservaciones" class="form-label">Observaciones</label>
+                                    <textarea class="form-control" id="masivoObservaciones" rows="2"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selección de Trabajadores -->
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-people"></i> Selección de Trabajadores</h6>
+                                <span class="badge bg-primary" id="contadorSeleccionados">0 seleccionados</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Filtros -->
+                            <div class="row mb-3">
+                                <div class="col-md-3">
+                                    <input type="number" class="form-control form-control-sm" id="filtroMasivoNumTrabajador" placeholder="# Trabajador">
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control form-control-sm" id="filtroMasivoNombre" placeholder="Nombre">
+                                </div>
+                                <div class="col-md-3">
+                                    <select class="form-select form-select-sm" id="filtroMasivoDepartamento">
+                                        <option value="">Todos los departamentos</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-sm btn-primary w-100" onclick="buscarTrabajadoresMasivo()">
+                                        <i class="bi bi-search"></i> Buscar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Acciones rápidas -->
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="seleccionarTodosTrabajadores()">
+                                    <i class="bi bi-check-square"></i> Seleccionar Todos
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deseleccionarTodosTrabajadores()">
+                                    <i class="bi bi-square"></i> Deseleccionar Todos
+                                </button>
+                            </div>
+
+                            <!-- Tabla de trabajadores -->
+                            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                <table class="table table-sm table-hover">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th width="50">
+                                                <input type="checkbox" class="form-check-input" id="checkTodosMasivo" onchange="toggleTodosTrabajadores(this)">
+                                            </th>
+                                            <th># Trab.</th>
+                                            <th>Nombre</th>
+                                            <th>Departamento</th>
+                                            <th>Plaza</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tablaTrabajadoresMasivo">
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">
+                                                <i class="bi bi-search"></i> Busque trabajadores para seleccionar
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="guardarMovimientoMasivo()">
+                    <i class="bi bi-check-circle"></i> Asignar Movimiento
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
