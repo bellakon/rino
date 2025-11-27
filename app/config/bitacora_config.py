@@ -54,7 +54,7 @@ MINUTOS_FALTA = 31
 
 # Tolerancia de salida (puede salir antes sin incidencia) - SOLO NO DOCENTES
 # Ejemplo: Si salida es 16:00, puede salir desde 15:35 sin problema
-TOLERANCIA_SALIDA_NO_DOCENTE_MINUTOS = 25
+TOLERANCIA_SALIDA_NO_DOCENTE_MINUTOS = 5
 
 # Tolerancia de salida DOCENTES (deben checar exacto o después)
 # Los docentes NO pueden salir antes de su hora de salida
