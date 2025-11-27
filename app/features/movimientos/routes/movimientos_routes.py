@@ -14,6 +14,7 @@ from app.features.movimientos.services.listar_movimientos_use_case import listar
 from app.features.movimientos.services.obtener_movimiento_use_case import obtener_movimiento_use_case
 from app.features.movimientos.services.editar_movimiento_use_case import editar_movimiento_use_case
 from app.features.movimientos.services.eliminar_movimiento_use_case import eliminar_movimiento_use_case
+from app.features.movimientos.services.generar_plantilla_pdf_use_case import generar_plantilla_pdf_use_case
 from app.config.movimientos_config import LETRAS_MOVIMIENTOS
 from datetime import datetime
 import io
@@ -448,4 +449,20 @@ def descargar_plantilla_movimientos_csv():
         mimetype='text/csv',
         as_attachment=True,
         download_name='plantilla_movimientos.csv'
+    )
+
+
+@movimientos_bp.route('/plantilla/pdf', methods=['GET'])
+def descargar_plantilla_pdf():
+    """Descarga PDF con códigos de movimientos y resumen del sistema"""
+    buffer, error = generar_plantilla_pdf_use_case.ejecutar()
+    
+    if error:
+        return jsonify({'error': error}), 500
+    
+    return send_file(
+        buffer,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=f'TecnoTime_Codigos_Movimientos_{datetime.now().strftime("%Y%m%d")}.pdf'
     )
