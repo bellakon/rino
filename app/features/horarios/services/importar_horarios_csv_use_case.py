@@ -4,6 +4,7 @@ Responsabilidad: Procesar CSV, crear/reutilizar plantillas, asignar a trabajador
 """
 import csv
 import io
+from datetime import datetime
 from app.core.database.query_executor import QueryExecutor
 from app.core.database.connection import db_connection
 from app.features.horarios.models.plantilla_horario import PlantillaHorario
@@ -124,14 +125,38 @@ class ImportarHorariosCSVUseCase:
                     horario_trabajador = HorarioTrabajador(
                         num_trabajador=num_trabajador,
                         plantilla_horario_id=id_plantilla,
-                        fecha_inicio_asignacion=row.get('fecha_inicio_asignacion'),
-                        fecha_fin_asignacion=row.get('fecha_fin_asignacion'),  # Ya validamos que existe
+                        fecha_inicio_asignacion=self._convertir_fecha(row.get('fecha_inicio_asignacion')),
+                        fecha_fin_asignacion=self._convertir_fecha(row.get('fecha_fin_asignacion')),
                         semestre=row.get('semestre'),
                         estado_asignacion='activo',
                         activo_asignacion=True
                     )
                     
-                    # El caso de uso asignar_horario validará traslapes automáticamente
+                    # Verificar si ya existe una asignación con las mismas fechas y semestre
+                    asignacion_existente = self._buscar_asignacion_existente(
+                        num_trabajador,
+                        horario_trabajador.fecha_inicio_asignacion,
+                        horario_trabajador.fecha_fin_asignacion,
+                        horario_trabajador.semestre
+                    )
+                    
+                    if asignacion_existente:
+                        # Si existe con la misma plantilla, solo actualizamos
+                        if asignacion_existente['plantilla_horario_id'] == id_plantilla:
+                            print(f"[IMPORTAR CSV] Trabajador {num_trabajador}: Asignación ya existe con la misma plantilla, se omite")
+                            resultados['asignaciones_exitosas'] += 1
+                            continue
+                        else:
+                            # Diferente plantilla, actualizar la asignación
+                            success = self._actualizar_asignacion(asignacion_existente['id'], id_plantilla)
+                            if success:
+                                print(f"[IMPORTAR CSV] Trabajador {num_trabajador}: Asignación actualizada a nueva plantilla")
+                                resultados['asignaciones_exitosas'] += 1
+                            else:
+                                resultados['errores'].append(f"Trabajador {num_trabajador}: Error al actualizar asignación")
+                            continue
+                    
+                    # No existe, crear nueva asignación
                     id_asignacion, error = asignar_horario_trabajador_use_case.ejecutar(horario_trabajador)
                     
                     print(f"[IMPORTAR CSV] Trabajador {num_trabajador}: id_asignacion={id_asignacion}, error={error}")
@@ -160,6 +185,57 @@ class ImportarHorariosCSVUseCase:
             if len(partes) == 2:
                 return f"{int(partes[0]):02d}:{int(partes[1]):02d}"
         return None
+    
+    def _convertir_fecha(self, fecha_str):
+        """
+        Convierte fecha de formato DD/MM/YY o DD/MM/YYYY a YYYY-MM-DD
+        Ejemplos: 25/08/25 -> 2025-08-25, 19/12/25 -> 2025-12-19
+        """
+        if not fecha_str or str(fecha_str).strip() == '':
+            return None
+        
+        fecha_str = str(fecha_str).strip()
+        
+        try:
+            # Intentar formato DD/MM/YY
+            if len(fecha_str.split('/')[2]) == 2:
+                fecha_obj = datetime.strptime(fecha_str, '%d/%m/%y')
+            else:
+                # Formato DD/MM/YYYY
+                fecha_obj = datetime.strptime(fecha_str, '%d/%m/%Y')
+            
+            return fecha_obj.strftime('%Y-%m-%d')
+        except Exception as e:
+            # Si falla, intentar formato YYYY-MM-DD (ya está correcto)
+            try:
+                datetime.strptime(fecha_str, '%Y-%m-%d')
+                return fecha_str
+            except:
+                return None
+    
+    def _buscar_asignacion_existente(self, num_trabajador, fecha_inicio, fecha_fin, semestre):
+        """Busca si ya existe una asignación con las mismas fechas y semestre"""
+        query = """
+            SELECT id, plantilla_horario_id
+            FROM horarios_trabajadores
+            WHERE num_trabajador = %s
+              AND fecha_inicio_asignacion = %s
+              AND fecha_fin_asignacion = %s
+              AND semestre = %s
+              AND activo_asignacion = 1
+        """
+        resultado, _ = self.query_executor.ejecutar(query, (num_trabajador, fecha_inicio, fecha_fin, semestre))
+        return resultado[0] if resultado else None
+    
+    def _actualizar_asignacion(self, id_asignacion, nueva_plantilla_id):
+        """Actualiza la plantilla de una asignación existente"""
+        query = """
+            UPDATE horarios_trabajadores
+            SET plantilla_horario_id = %s
+            WHERE id = %s
+        """
+        _, error = self.query_executor.ejecutar(query, (nueva_plantilla_id, id_asignacion))
+        return error is None
     
     def _obtener_o_crear_plantilla(self, plantilla, resultados):
         """Obtiene plantilla existente por hash o crea nueva"""

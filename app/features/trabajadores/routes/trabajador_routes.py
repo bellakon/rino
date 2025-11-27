@@ -133,7 +133,9 @@ def crear():
         num_trabajador = int(request.form.get('num_trabajador'))
         nombre = request.form.get('nombre', '').strip()
         email = request.form.get('email', '').strip() or None
-        departamento = request.form.get('departamento', '').strip() or None
+        departamento_id = request.form.get('departamento_id')
+        if departamento_id:
+            departamento_id = int(departamento_id) if departamento_id else None
         tipoPlaza = request.form.get('tipoPlaza', '').strip() or None
         ingresoSEPfecha = request.form.get('ingresoSEPfecha') or None
         activo = request.form.get('activo') == '1'
@@ -148,7 +150,7 @@ def crear():
             num_trabajador=num_trabajador,
             nombre=nombre,
             email=email,
-            departamento=departamento,
+            departamento_id=departamento_id,
             tipoPlaza=tipoPlaza,
             ingresoSEPfecha=ingresoSEPfecha,
             activo=activo,

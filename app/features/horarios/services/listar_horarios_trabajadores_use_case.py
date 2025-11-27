@@ -12,20 +12,21 @@ class ListarHorariosTrabajadoresUseCase:
     def __init__(self):
         self.query_executor = QueryExecutor(db_connection)
     
-    def ejecutar(self, semestre=None, num_trabajador=None, estado_asignacion=None):
+    def ejecutar(self, semestre=None, num_trabajador=None, nombre_trabajador=None, estado_asignacion=None):
         """
         Lista asignaciones de horarios
         
         Args:
             semestre: Filtrar por semestre
-            num_trabajador: Filtrar por trabajador
+            num_trabajador: Filtrar por número de trabajador
+            nombre_trabajador: Filtrar por nombre de trabajador (búsqueda parcial)
             estado_asignacion: Filtrar por estado (activo/inactivo)
             
         Returns:
             tuple: (lista_horarios, error)
         """
         try:
-            print(f"[LISTAR ASIGNACIONES] Filtros: semestre={semestre}, num_trabajador={num_trabajador}, estado={estado_asignacion}")
+            print(f"[LISTAR ASIGNACIONES] Filtros: semestre={semestre}, num_trabajador={num_trabajador}, nombre={nombre_trabajador}, estado={estado_asignacion}")
             
             # Query base
             query = """
@@ -58,6 +59,10 @@ class ListarHorariosTrabajadoresUseCase:
             if num_trabajador:
                 where_clauses.append("ht.num_trabajador = %s")
                 params.append(num_trabajador)
+            
+            if nombre_trabajador:
+                where_clauses.append("t.nombre LIKE %s")
+                params.append(f"%{nombre_trabajador}%")
             
             if estado_asignacion:
                 where_clauses.append("ht.estado_asignacion = %s")

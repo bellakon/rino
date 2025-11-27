@@ -107,7 +107,13 @@
             <div class="card-body">
                 <!-- Filtros Asignaciones -->
                 <div class="row mb-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <input type="number" class="form-control" id="filtroNumTrabajador" placeholder="Núm. Trabajador">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" id="filtroNombreTrabajador" placeholder="Nombre del trabajador">
+                    </div>
+                    <div class="col-md-2">
                         <select class="form-select" id="filtroSemestre">
                             <option value="">Todos los semestres</option>
                             {% for semestre in semestres %}
@@ -115,7 +121,7 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-2">
                         <select class="form-select" id="filtroEstadoAsignacion">
                             <option value="">Todos los estados</option>
                             <option value="activo">Activo</option>
@@ -123,7 +129,7 @@
                             <option value="suspendido">Suspendido</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-2">
                         <button class="btn btn-success w-100" onclick="cargarAsignaciones()">
                             <i class="bi bi-search"></i> Buscar
                         </button>
@@ -232,12 +238,16 @@ function cargarPlantillas() {
 
 // Función: Cargar asignaciones
 function cargarAsignaciones() {
+    const numTrabajador = document.getElementById('filtroNumTrabajador').value;
+    const nombreTrabajador = document.getElementById('filtroNombreTrabajador').value;
     const semestre = document.getElementById('filtroSemestre').value;
     const estado = document.getElementById('filtroEstadoAsignacion').value;
     
-    console.log('[CARGAR ASIGNACIONES] Filtros:', { semestre, estado });
+    console.log('[CARGAR ASIGNACIONES] Filtros:', { numTrabajador, nombreTrabajador, semestre, estado });
     
     const params = new URLSearchParams();
+    if (numTrabajador) params.append('num_trabajador', numTrabajador);
+    if (nombreTrabajador) params.append('nombre_trabajador', nombreTrabajador);
     if (semestre) params.append('semestre', semestre);
     if (estado) params.append('estado', estado);
     
@@ -263,7 +273,7 @@ function cargarAsignaciones() {
             tbody.innerHTML = data.horarios.map(h => `
                 <tr>
                     <td>${h.id}</td>
-                    <td>${h.nombre_completo || 'N/A'}</td>
+                    <td>${h.num_trabajador ? h.num_trabajador + ' - ' : ''}${h.nombre_completo || 'N/A'}</td>
                     <td>${h.departamento_nombre || 'Sin departamento'}</td>
                     <td>${h.nombre_horario || 'N/A'}</td>
                     <td>${h.fecha_inicio_asignacion} - ${h.fecha_fin_asignacion || 'Indefinido'}</td>

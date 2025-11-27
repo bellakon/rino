@@ -199,9 +199,10 @@ def listar_asignaciones():
     """Lista asignaciones de horarios"""
     semestre = request.args.get('semestre')
     num_trabajador = request.args.get('num_trabajador', type=int)
+    nombre_trabajador = request.args.get('nombre_trabajador')
     estado = request.args.get('estado')
     
-    horarios, error = listar_horarios_trabajadores_use_case.ejecutar(semestre, num_trabajador, estado)
+    horarios, error = listar_horarios_trabajadores_use_case.ejecutar(semestre, num_trabajador, nombre_trabajador, estado)
     
     if error:
         return jsonify({'error': error}), 500

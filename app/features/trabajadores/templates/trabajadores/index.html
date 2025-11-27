@@ -380,8 +380,26 @@ function cargarDepartamentos() {
                 return;
             }
             departamentosDisponibles = data.departamentos;
+            // Llenar select del modal crear
+            llenarSelectDepartamentosCrear();
         })
         .catch(error => console.error('Error:', error));
+}
+
+function llenarSelectDepartamentosCrear() {
+    const select = document.getElementById('departamento_crear');
+    if (!select) return;
+    
+    // Limpiar opciones existentes excepto la primera
+    select.innerHTML = '<option value="">Seleccione un departamento</option>';
+    
+    // Agregar departamentos
+    departamentosDisponibles.forEach(dept => {
+        const option = document.createElement('option');
+        option.value = dept.id;
+        option.textContent = `${dept.nombre} ${dept.nomenclatura ? '(' + dept.nomenclatura + ')' : ''}`;
+        select.appendChild(option);
+    });
 }
 
 function mostrarModalCambiarDepartamento(trabajadorId, nombreTrabajador, departamentoActualId) {
