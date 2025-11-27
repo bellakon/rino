@@ -344,7 +344,7 @@ def listar():
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
     
-    query += " ORDER BY t.nombre ASC"
+    query += " ORDER BY t.num_trabajador ASC"
     
     print(f"[LISTAR TRABAJADORES] Query: {query}")
     print(f"[LISTAR TRABAJADORES] Params: {params}")

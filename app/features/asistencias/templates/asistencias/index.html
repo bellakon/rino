@@ -23,7 +23,7 @@
             </div>
             <div class="card-body">
                 <form method="get" action="{{ url_for('asistencias.index') }}" class="row g-3">
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label for="num_trabajador" class="form-label">Número de Trabajador</label>
                         <input type="number" 
                                class="form-control" 
@@ -33,6 +33,15 @@
                                placeholder="Ej: 12345">
                     </div>
                     <div class="col-md-3">
+                        <label for="nombre_trabajador" class="form-label">Nombre del Trabajador</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="nombre_trabajador" 
+                               name="nombre_trabajador" 
+                               value="{{ nombre_trabajador_filter or '' }}"
+                               placeholder="Buscar por nombre">
+                    </div>
+                    <div class="col-md-2">
                         <label for="checador" class="form-label">Checador (Serial)</label>
                         <input type="text" 
                                class="form-control" 
@@ -49,7 +58,7 @@
                                name="fecha_inicio" 
                                value="{{ fecha_inicio_filter }}">
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-1">
                         <label for="fecha_fin" class="form-label">Fecha Fin</label>
                         <input type="date" 
                                class="form-control" 

@@ -1,6 +1,6 @@
 """
 Punto de entrada principal de la aplicación Flask
-Sistema de Gestión de Checadores ZKTeco
+TecnoTime - Sistema de Gestión de Asistencias
 """
 from app import create_app
 import os
@@ -20,7 +20,7 @@ if __name__ == '__main__':
     from app.config.app_config import Config
     
     print("=" * 60)
-    print("Sistema de Checadores ZKTeco")
+    print("TecnoTime - Sistema de Gestión de Asistencias")
     print("=" * 60)
     print(f"Servidor corriendo en: http://{Config.HOST}:{Config.PORT}")
     print(f"Modo debug: {Config.DEBUG}")

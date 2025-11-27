@@ -9,13 +9,14 @@ from app.features.asistencias.models import Asistencia
 class ObtenerAsistenciasUseCase:
     """Obtiene asistencias de la base de datos y las convierte a modelos"""
     
-    def ejecutar(self, num_trabajador=None, checador=None, fecha_inicio=None, fecha_fin=None, 
+    def ejecutar(self, num_trabajador=None, nombre_trabajador=None, checador=None, fecha_inicio=None, fecha_fin=None, 
                  page=1, per_page=50, order_by='id', order_dir='desc'):
         """
         Ejecuta SELECT con filtros, ordenación y paginación, convierte a modelos Asistencia
         
         Args:
             num_trabajador: Filtro opcional por número de trabajador
+            nombre_trabajador: Filtro opcional por nombre del trabajador
             checador: Filtro opcional por checador (serial)
             fecha_inicio: Filtro opcional por fecha inicial (YYYY-MM-DD)
             fecha_fin: Filtro opcional por fecha final (YYYY-MM-DD)
@@ -34,6 +35,10 @@ class ObtenerAsistenciasUseCase:
         if num_trabajador:
             where_clauses.append("num_trabajador = %s")
             params.append(num_trabajador)
+        
+        if nombre_trabajador:
+            where_clauses.append("nombre LIKE %s")
+            params.append(f"%{nombre_trabajador}%")
         
         if checador:
             where_clauses.append("checador LIKE %s")

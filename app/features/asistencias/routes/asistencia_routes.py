@@ -23,6 +23,7 @@ def index():
     
     # Obtener parámetros de query string
     num_trabajador = request.args.get('num_trabajador', type=int)
+    nombre_trabajador = request.args.get('nombre_trabajador', type=str)
     checador = request.args.get('checador', type=str)
     fecha_inicio = request.args.get('fecha_inicio', type=str)
     fecha_fin = request.args.get('fecha_fin', type=str)
@@ -44,6 +45,7 @@ def index():
     # Usar caso de uso con filtros, ordenación y paginación
     resultado, error = obtener_asistencias_use_case.ejecutar(
         num_trabajador=num_trabajador,
+        nombre_trabajador=nombre_trabajador,
         checador=checador,
         fecha_inicio=fecha_inicio,
         fecha_fin=fecha_fin,
@@ -72,6 +74,7 @@ def index():
         has_prev=has_prev,
         has_next=has_next,
         num_trabajador_filter=num_trabajador,
+        nombre_trabajador_filter=nombre_trabajador or '',
         checador_filter=checador or '',
         fecha_inicio_filter=fecha_inicio or '',
         fecha_fin_filter=fecha_fin or '',
