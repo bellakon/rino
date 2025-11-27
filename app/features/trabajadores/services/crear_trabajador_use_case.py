@@ -8,7 +8,7 @@ from app.core.database.query_executor import query_executor
 class CrearTrabajadorUseCase:
     """Crea un nuevo trabajador en la base de datos"""
     
-    def ejecutar(self, num_trabajador, nombre, departamento=None, tipoPlaza=None, 
+    def ejecutar(self, num_trabajador, nombre, email=None, departamento=None, tipoPlaza=None, 
                  ingresoSEPfecha=None, activo=True, movimiento=None):
         """
         Inserta un nuevo trabajador
@@ -16,6 +16,7 @@ class CrearTrabajadorUseCase:
         Args:
             num_trabajador: Número único del trabajador
             nombre: Nombre completo
+            email: Correo electrónico (opcional)
             departamento: Departamento (opcional)
             tipoPlaza: Tipo de plaza (opcional)
             ingresoSEPfecha: Fecha de ingreso (opcional)
@@ -28,13 +29,14 @@ class CrearTrabajadorUseCase:
         try:
             query = """
                 INSERT INTO trabajadores 
-                (num_trabajador, nombre, departamento, tipoPlaza, ingresoSEPfecha, activo, movimiento)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                (num_trabajador, nombre, email, departamento, tipoPlaza, ingresoSEPfecha, activo, movimiento)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """
             
             params = (
                 num_trabajador,
                 nombre,
+                email,
                 departamento,
                 tipoPlaza,
                 ingresoSEPfecha if ingresoSEPfecha else None,

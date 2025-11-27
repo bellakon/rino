@@ -132,6 +132,7 @@ def crear():
     try:
         num_trabajador = int(request.form.get('num_trabajador'))
         nombre = request.form.get('nombre', '').strip()
+        email = request.form.get('email', '').strip() or None
         departamento = request.form.get('departamento', '').strip() or None
         tipoPlaza = request.form.get('tipoPlaza', '').strip() or None
         ingresoSEPfecha = request.form.get('ingresoSEPfecha') or None
@@ -146,6 +147,7 @@ def crear():
         trabajador_id, error = crear_trabajador_use_case.ejecutar(
             num_trabajador=num_trabajador,
             nombre=nombre,
+            email=email,
             departamento=departamento,
             tipoPlaza=tipoPlaza,
             ingresoSEPfecha=ingresoSEPfecha,
@@ -189,7 +191,7 @@ def actualizar(id):
     try:
         num_trabajador = int(request.form.get('num_trabajador'))
         nombre = request.form.get('nombre', '').strip()
-        departamento = request.form.get('departamento', '').strip() or None
+        email = request.form.get('email', '').strip() or None
         tipoPlaza = request.form.get('tipoPlaza', '').strip() or None
         ingresoSEPfecha = request.form.get('ingresoSEPfecha') or None
         activo = request.form.get('activo') == '1'
@@ -204,7 +206,7 @@ def actualizar(id):
             trabajador_id=id,
             num_trabajador=num_trabajador,
             nombre=nombre,
-            departamento=departamento,
+            email=email,
             tipoPlaza=tipoPlaza,
             ingresoSEPfecha=ingresoSEPfecha,
             activo=activo,
@@ -295,6 +297,7 @@ def listar():
             t.id,
             t.num_trabajador,
             t.nombre,
+            t.email,
             t.departamento_id,
             t.tipoPlaza,
             t.activo,

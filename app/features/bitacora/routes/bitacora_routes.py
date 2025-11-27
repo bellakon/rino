@@ -6,6 +6,7 @@ from app.features.bitacora.services.listar_bitacora_use_case import ListarBitaco
 from app.features.bitacora.services.obtener_horario_asignado_use_case import ObtenerHorarioAsignadoUseCase
 from app.features.bitacora.services.generar_pdf_bitacora_use_case import generar_pdf_bitacora_use_case
 from app.features.bitacora.services.generar_pdf_masivo_bitacora_use_case import generar_pdf_masivo_bitacora_use_case
+from app.features.bitacora.services.enviar_correo_bitacora_use_case import enviar_correo_bitacora_use_case
 
 # Configurar logger
 logger = logging.getLogger(__name__)
@@ -454,4 +455,56 @@ def procesar_masivo():
             'success': False,
             'message': f'Error al procesar bitácora masiva: {str(e)}'
         }), 500
+
+
+@bitacora_bp.route('/enviar-correo', methods=['POST'])
+def enviar_correo():
+    """Envía correo con PDF de bitácora adjunto"""
+    try:
+        logger.info("[BITACORA] POST /bitacora/enviar-correo")
+        data = request.get_json()
+        
+        num_trabajador = data.get('num_trabajador')
+        nombre_trabajador = data.get('nombre_trabajador')
+        fecha_inicio = data.get('fecha_inicio')
+        fecha_fin = data.get('fecha_fin')
+        
+        logger.debug(f"[BITACORA] Enviando correo para trabajador {num_trabajador}")
+        
+        if not all([num_trabajador, nombre_trabajador, fecha_inicio, fecha_fin]):
+            return jsonify({
+                'success': False,
+                'message': 'Faltan datos requeridos (num_trabajador, nombre_trabajador, fecha_inicio, fecha_fin)'
+            }), 400
+        
+        # Ejecutar caso de uso
+        exito, error = enviar_correo_bitacora_use_case.ejecutar(
+            num_trabajador=num_trabajador,
+            nombre_trabajador=nombre_trabajador,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin
+        )
+        
+        if not exito:
+            logger.error(f"[BITACORA] Error enviando correo: {error}")
+            return jsonify({
+                'success': False,
+                'message': error
+            }), 500
+        
+        logger.info(f"[BITACORA] Correo enviado exitosamente para trabajador {num_trabajador}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Correo enviado exitosamente'
+        })
+        
+    except Exception as e:
+        logger.error(f"[BITACORA] Error en enviar_correo(): {str(e)}")
+        logger.error(f"[BITACORA] Traceback: {__import__('traceback').format_exc()}")
+        return jsonify({
+            'success': False,
+            'message': f'Error al enviar correo: {str(e)}'
+        }), 500
+
 

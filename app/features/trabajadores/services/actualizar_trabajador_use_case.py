@@ -8,7 +8,7 @@ from app.core.database.query_executor import query_executor
 class ActualizarTrabajadorUseCase:
     """Actualiza un trabajador existente en la base de datos"""
     
-    def ejecutar(self, trabajador_id, num_trabajador, nombre, departamento=None, 
+    def ejecutar(self, trabajador_id, num_trabajador, nombre, email=None, 
                  tipoPlaza=None, ingresoSEPfecha=None, activo=True, movimiento=None):
         """
         Actualiza un trabajador existente
@@ -17,7 +17,7 @@ class ActualizarTrabajadorUseCase:
             trabajador_id: ID del trabajador a actualizar
             num_trabajador: Número único del trabajador
             nombre: Nombre completo
-            departamento: Departamento (opcional)
+            email: Correo electrónico (opcional)
             tipoPlaza: Tipo de plaza (opcional)
             ingresoSEPfecha: Fecha de ingreso (opcional)
             activo: Estado activo
@@ -31,7 +31,7 @@ class ActualizarTrabajadorUseCase:
                 UPDATE trabajadores 
                 SET num_trabajador = %s,
                     nombre = %s,
-                    departamento = %s,
+                    email = %s,
                     tipoPlaza = %s,
                     ingresoSEPfecha = %s,
                     activo = %s,
@@ -42,7 +42,7 @@ class ActualizarTrabajadorUseCase:
             params = (
                 num_trabajador,
                 nombre,
-                departamento,
+                email,
                 tipoPlaza,
                 ingresoSEPfecha if ingresoSEPfecha else None,
                 1 if activo else 0,

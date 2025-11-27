@@ -64,6 +64,7 @@ class ProcesarBitacoraUseCase:
             while fecha_actual <= fecha_fin:
                 # Obtener horario del día de la semana
                 dia_semana = fecha_actual.weekday()  # 0=Lunes, 6=Domingo
+                dia_nombre = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][dia_semana]
                 horario_dia = horario_asignado['horarios_por_dia'].get(dia_semana)
                 
                 # Verificar si hay movimiento PRIMERO (antes de saltar por descanso)
@@ -74,11 +75,29 @@ class ProcesarBitacoraUseCase:
                     print(f"[WARNING] Error obteniendo movimiento {fecha_actual}: {error}")
                     movimiento = None
                 
-                # TEMPORAL: Procesar TODOS los días incluyendo descansos para debugging
-                # Si es descanso, usar horario ficticio
-                if not horario_dia or horario_dia.upper() == 'DESCANSO':
-                    horario_dia = '00:00-00:00'  # Horario ficticio para debugging
-                    print(f"[DEBUG] Día {fecha_actual} ({['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][dia_semana]}) es DESCANSO - procesando para debug")
+                # REGLA: No procesar sábados (5) y domingos (6) EXCEPTO si:
+                # 1. Tiene horario asignado para ese día (no es 'DESCANSO' ni None)
+                # 2. Tiene un movimiento ese día
+                es_fin_de_semana = dia_semana in [5, 6]  # Sábado o Domingo
+                tiene_horario_real = horario_dia and horario_dia.upper() != 'DESCANSO'
+                tiene_movimiento = movimiento and movimiento.get('tiene_movimiento')
+                
+                if es_fin_de_semana and not tiene_horario_real and not tiene_movimiento:
+                    print(f"[DEBUG] Día {fecha_actual} ({dia_nombre}) saltado: Fin de semana sin horario ni movimiento")
+                    stats['saltados_descanso'] += 1
+                    fecha_actual += timedelta(days=1)
+                    continue
+                
+                # Si no tiene horario ese día o es día de descanso pero SÍ tiene movimiento
+                if (not horario_dia or horario_dia.upper() == 'DESCANSO') and tiene_movimiento:
+                    horario_dia = '00:00-00:00'  # Horario ficticio para procesar el movimiento
+                    print(f"[DEBUG] Día {fecha_actual} ({dia_nombre}) es DESCANSO pero tiene movimiento")
+                elif not horario_dia or horario_dia.upper() == 'DESCANSO':
+                    # Es descanso y NO tiene movimiento, saltar
+                    print(f"[DEBUG] Día {fecha_actual} ({dia_nombre}) saltado: DESCANSO sin movimiento")
+                    stats['saltados_descanso'] += 1
+                    fecha_actual += timedelta(days=1)
+                    continue
                 
                 # Obtener checadas del día (con lógica inteligente)
                 checadas, error = obtener_checadas_dia_use_case.ejecutar(
@@ -135,7 +154,7 @@ class ProcesarBitacoraUseCase:
                     stats['errores'] += 1
                 else:
                     accion = "actualizado" if fue_actualizado else "insertado"
-                    print(f"[OK] {fecha_actual} ({['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][dia_semana]}) {accion}: {registro.codigo_incidencia} - {registro.descripcion_incidencia[:50]}")
+                    print(f"[OK] {fecha_actual} ({dia_nombre}) {accion}: {registro.codigo_incidencia} - {registro.descripcion_incidencia[:50]}")
                     if fue_actualizado:
                         stats['actualizados'] += 1
                     else:

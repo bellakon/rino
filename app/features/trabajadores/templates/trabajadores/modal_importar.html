@@ -19,12 +19,19 @@
                                accept=".csv"
                                required>
                         <div class="form-text">
-                            El archivo debe tener las columnas: <code>num</code>, <code>nombre</code>
+                            <strong>Columnas requeridas:</strong> <code>num</code>, <code>nombre</code><br>
+                            <strong>Columnas opcionales:</strong> <code>email</code> (para envío de bitácoras por correo)
                         </div>
                     </div>
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i> 
                         Los trabajadores duplicados (mismo num_trabajador) serán ignorados automáticamente.
+                    </div>
+                    <div class="alert alert-success">
+                        <i class="bi bi-download"></i> 
+                        <a href="{{ url_for('static', filename='plantilla_trabajadores.csv') }}" download class="text-decoration-none">
+                            Descargar plantilla CSV de ejemplo
+                        </a>
                     </div>
                 </div>
                 <div class="modal-footer">

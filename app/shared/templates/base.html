@@ -20,6 +20,36 @@
             min-height: calc(100vh - 56px);
             padding: 20px 0;
         }
+        /* Estilos para menús desplegables */
+        .dropdown-menu {
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: none;
+            margin-top: 0.5rem;
+        }
+        .dropdown-item {
+            padding: 0.6rem 1.2rem;
+            transition: all 0.2s ease;
+        }
+        .dropdown-item:hover {
+            background-color: #0d6efd;
+            color: white;
+            transform: translateX(5px);
+        }
+        .dropdown-item i {
+            width: 20px;
+            margin-right: 8px;
+        }
+        .nav-link {
+            transition: all 0.2s ease;
+        }
+        .nav-link:hover {
+            transform: translateY(-2px);
+        }
+        .dropdown-divider {
+            margin: 0.5rem 0;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
     </style>
     
     {% block extra_css %}{% endblock %}
@@ -27,7 +57,7 @@
 <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
+        <div class="container-fluid">
             <a class="navbar-brand" href="{{ url_for('home') }}">
                 <i class="bi bi-clock-history"></i> Sistema Checadores ZKTeco
             </a>
@@ -35,41 +65,79 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('home') }}">Inicio</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('checadores.index') }}">Checadores</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('trabajadores.index') }}">Trabajadores</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('departamentos.index') }}">Departamentos</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('horarios.index') }}">
-                            <i class="bi bi-calendar-week"></i> Horarios
+                        <a class="nav-link" href="{{ url_for('home') }}">
+                            <i class="bi bi-house-door"></i> Inicio
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('movimientos.index') }}">
-                            <i class="bi bi-file-earmark-text"></i> Movimientos
+                    
+                    <!-- Menú Administración -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarAdministracion" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Administración
                         </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarAdministracion">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('checadores.index') }}">
+                                    <i class="bi bi-pc-display"></i> Checadores
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('asistencias.index') }}">
+                                    <i class="bi bi-calendar-check"></i> Asistencias
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('migrar_datos.index') }}">
+                                    <i class="bi bi-arrow-left-right"></i> Migrar a RinoTime
+                                </a>
+                            </li>
+                        </ul>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('bitacora.index') }}">
-                            <i class="bi bi-journal-check"></i> Bitácora
+                    
+                    <!-- Menú Organización -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarOrganizacion" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-building"></i> Organización
                         </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarOrganizacion">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('trabajadores.index') }}">
+                                    <i class="bi bi-people"></i> Trabajadores
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('departamentos.index') }}">
+                                    <i class="bi bi-diagram-3"></i> Departamentos
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('horarios.index') }}">
+                                    <i class="bi bi-calendar-week"></i> Horarios
+                                </a>
+                            </li>
+                        </ul>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('asistencias.index') }}">
-                            <i class="bi bi-calendar-check"></i> Asistencias
+                    
+                    <!-- Menú Reportes -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarReportes" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-file-earmark-bar-graph"></i> Reportes
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('migrar_datos.index') }}">Migrar a RinoTime</a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarReportes">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('bitacora.index') }}">
+                                    <i class="bi bi-journal-check"></i> Bitácora
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('movimientos.index') }}">
+                                    <i class="bi bi-file-earmark-text"></i> Movimientos
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
             </div>

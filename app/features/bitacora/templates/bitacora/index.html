@@ -1078,13 +1078,23 @@ function mostrarModalResultadosMasivos(resultados, totales, fechaInicio, fechaFi
         const celdaAcciones = tr.lastElementChild;
         
         if (resultado.success && resultado.total_registros > 0) {
+            // Botón PDF
             const btnPdf = document.createElement('button');
-            btnPdf.className = 'btn btn-sm btn-primary';
+            btnPdf.className = 'btn btn-sm btn-primary me-1';
             btnPdf.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> PDF';
             btnPdf.onclick = function() {
                 descargarPdfIndividualDesdeMasivo(resultado.num_trabajador, resultado.nombre);
             };
             celdaAcciones.appendChild(btnPdf);
+            
+            // Botón Enviar Correo
+            const btnCorreo = document.createElement('button');
+            btnCorreo.className = 'btn btn-sm btn-success';
+            btnCorreo.innerHTML = '<i class="bi bi-envelope"></i> Enviar';
+            btnCorreo.onclick = function() {
+                enviarPorCorreo(resultado.num_trabajador, resultado.nombre);
+            };
+            celdaAcciones.appendChild(btnCorreo);
         } else if (!resultado.success) {
             const spanError = document.createElement('small');
             spanError.className = 'text-danger';
@@ -1173,6 +1183,45 @@ async function descargarPdfIndividualDesdeMasivo(numTrabajador, nombreTrabajador
     } catch (error) {
         console.error('[BITACORA] Error descargando PDF individual:', error);
         mostrarToast('Error al descargar PDF', 'error');
+    }
+}
+
+async function enviarPorCorreo(numTrabajador, nombreTrabajador) {
+    console.log('[BITACORA] Enviando correo para trabajador:', numTrabajador);
+    
+    const fechas = window.fechasProcesamientoMasivo;
+    if (!fechas) {
+        mostrarToast('Error: No se encontraron las fechas de procesamiento', 'error');
+        return;
+    }
+    
+    try {
+        // Mostrar indicador de carga
+        mostrarToast('Enviando correo...', 'info');
+        
+        // Llamar al endpoint para enviar el correo
+        const response = await fetch('/bitacora/enviar-correo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                num_trabajador: numTrabajador,
+                nombre_trabajador: nombreTrabajador,
+                fecha_inicio: fechas.fechaInicio,
+                fecha_fin: fechas.fechaFin
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarToast(data.message || 'Correo enviado exitosamente', 'success');
+        } else {
+            mostrarToast(data.message || 'Error al enviar correo', 'error');
+        }
+        
+    } catch (error) {
+        console.error('[BITACORA] Error enviando correo:', error);
+        mostrarToast('Error al enviar correo', 'error');
     }
 }
 

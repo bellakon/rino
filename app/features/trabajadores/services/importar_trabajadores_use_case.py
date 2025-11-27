@@ -47,6 +47,7 @@ class ImportarTrabajadoresUseCase:
                         trabajadores_lista.append({
                             'num_trabajador': int(row['num'].strip()),
                             'nombre': row['nombre'].strip(),
+                            'email': row.get('email', '').strip() or None,  # Nueva columna opcional
                             'activo': 1
                         })
                     except ValueError:
@@ -57,12 +58,12 @@ class ImportarTrabajadoresUseCase:
                     filas_ignoradas += 1
             
             if not trabajadores_lista:
-                return None, f"El archivo CSV está vacío o no tiene el formato correcto. Filas procesadas: {filas_procesadas}, ignoradas: {filas_ignoradas}. Verifique que las columnas se llamen 'num' y 'nombre'"
+                return None, f"El archivo CSV está vacío o no tiene el formato correcto. Filas procesadas: {filas_procesadas}, ignoradas: {filas_ignoradas}. Verifique que las columnas se llamen 'num', 'nombre' y opcionalmente 'email'"
             
             # Insertar en lotes usando query_executor
             query = """
-                INSERT INTO trabajadores (num_trabajador, nombre, activo)
-                VALUES (%(num_trabajador)s, %(nombre)s, %(activo)s)
+                INSERT INTO trabajadores (num_trabajador, nombre, email, activo)
+                VALUES (%(num_trabajador)s, %(nombre)s, %(email)s, %(activo)s)
             """
             
             registros_insertados, error = query_executor.ejecutar_batch(
