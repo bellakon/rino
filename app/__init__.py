@@ -1,8 +1,10 @@
 """
 Inicialización de la aplicación Flask con arquitectura por features
 """
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect, url_for, session
 from app.config.app_config import Config
+from app.config.users_config import SESSION_LIFETIME_SECONDS
+from datetime import timedelta
 import os
 
 
@@ -13,6 +15,9 @@ def create_app():
     app = Flask(__name__, template_folder='shared/templates')
     app.config.from_object(Config)
     app.secret_key = Config.SECRET_KEY
+    
+    # Configurar duración de sesión
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(seconds=SESSION_LIFETIME_SECONDS)
     
     # Registrar filtros de Jinja personalizados
     @app.template_filter('number_format')
@@ -29,6 +34,7 @@ def create_app():
     loader = jinja2.ChoiceLoader([
         app.jinja_loader,
         jinja2.FileSystemLoader([
+            os.path.join(base_dir, 'features/auth/templates'),
             os.path.join(base_dir, 'features/checadores/templates'),
             os.path.join(base_dir, 'features/asistencias/templates'),
             os.path.join(base_dir, 'features/trabajadores/templates'),
@@ -40,6 +46,10 @@ def create_app():
         ])
     ])
     app.jinja_loader = loader
+    
+    # Registrar blueprint de autenticación primero
+    from app.features.auth.routes import auth_bp, login_required
+    app.register_blueprint(auth_bp)
     
     # Registrar blueprints de features
     from app.features.checadores.routes.checador_routes import checadores_bp
@@ -60,9 +70,28 @@ def create_app():
     app.register_blueprint(movimientos_bp)
     app.register_blueprint(bitacora_bp)
     
+    # Proteger TODAS las rutas excepto auth
+    @app.before_request
+    def require_login():
+        from flask import request
+        # Rutas que no requieren autenticación
+        allowed_routes = ['auth.login', 'auth.logout', 'static']
+        
+        if request.endpoint and not any(request.endpoint.startswith(r) for r in allowed_routes):
+            if not session.get('logged_in'):
+                return redirect(url_for('auth.login', next=request.url))
+    
     # Ruta principal
     @app.route('/')
     def home():
         return render_template('index.html')
+    
+    # Agregar contexto global para templates
+    @app.context_processor
+    def inject_user():
+        return {
+            'current_user': session.get('username'),
+            'is_logged_in': session.get('logged_in', False)
+        }
     
     return app
