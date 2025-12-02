@@ -24,7 +24,8 @@ class ChecadorService:
             tuple: (conexion, error)
         """
         try:
-            zk = ZK(ip, port=puerto, timeout=self.timeout)
+            # Deshabilitar ping para evitar problemas con Gunicorn workers
+            zk = ZK(ip, port=puerto, timeout=self.timeout, ommit_ping=True)
             conn = zk.connect()
             return conn, None
         except Exception as e:

@@ -100,10 +100,10 @@ class CalcularIncidenciasUseCase:
             
             return {
                 'codigo_incidencia': 'F',
-                'tipo_movimiento': 'FNA',
+                'tipo_movimiento': 'NA',
                 'minutos_retardo': 0,
                 'horas_trabajadas': Decimal('0.00'),
-                'descripcion_incidencia': 'Falta - No marcó asistencia'
+                'descripcion_incidencia': 'No marcó asistencia'
             }
         
         # Parsear horario esperado
@@ -178,10 +178,10 @@ class CalcularIncidenciasUseCase:
         if not checada1:
             return {
                 'codigo_incidencia': 'F',
-                'tipo_movimiento': 'FNA',
+                'tipo_movimiento': 'NA',
                 'minutos_retardo': 0,
                 'horas_trabajadas': Decimal('0.00'),
-                'descripcion_incidencia': 'Falta - No marcó entrada'
+                'descripcion_incidencia': 'No marcó entrada'
             }
         
         # Calcular diferencia de entrada
@@ -196,10 +196,10 @@ class CalcularIncidenciasUseCase:
             if minutos_antes > bitacora_config.MINUTOS_ANTES_PERMITIDOS:
                 return {
                     'codigo_incidencia': 'F',
-                    'tipo_movimiento': 'FET',
+                    'tipo_movimiento': 'FH',
                     'minutos_retardo': 0,
                     'horas_trabajadas': Decimal('0.00'),
-                    'descripcion_incidencia': f'Falta - Entrada demasiado temprana ({minutos_antes} min antes)'
+                    'descripcion_incidencia': f'Fuera de Horario - Entrada demasiado temprana ({minutos_antes} min antes)'
                 }
         
         # Calcular código de retardo para entrada
@@ -270,10 +270,10 @@ class CalcularIncidenciasUseCase:
         if not checada1:
             return {
                 'codigo_incidencia': 'F',
-                'tipo_movimiento': 'FNA',
+                'tipo_movimiento': 'NA',
                 'minutos_retardo': 0,
                 'horas_trabajadas': Decimal('0.00'),
-                'descripcion_incidencia': 'Falta - No marcó primera entrada'
+                'descripcion_incidencia': 'No marcó primera entrada'
             }
         
         # Calcular incidencia del primer bloque
@@ -323,10 +323,10 @@ class CalcularIncidenciasUseCase:
         if not entrada_checada:
             return {
                 'codigo_incidencia': 'F',
-                'tipo_movimiento': 'FNA',
+                'tipo_movimiento': 'NA',
                 'minutos_retardo': 0,
                 'horas_trabajadas': Decimal('0.00'),
-                'descripcion_incidencia': f'Falta - No marcó entrada en {nombre_bloque}'
+                'descripcion_incidencia': f'No marcó entrada en {nombre_bloque}'
             }
         
         minutos_diferencia = self._calcular_diferencia_minutos(entrada_checada, entrada_esperada)
@@ -382,14 +382,13 @@ class CalcularIncidenciasUseCase:
             return f'Retardo Mayor ({minutos_tarde} min)'
         elif codigo == 'F':
             # Describir según el tipo de movimiento (falta)
-            if tipo_movimiento == 'FRT':
-                return f'Falta por retardo excesivo ({minutos_tarde} min tarde)'
-            elif tipo_movimiento == 'FNA':
-                return 'Falta - No marcó asistencia'
-            elif tipo_movimiento == 'FST':
-                return 'Falta por salida muy tardía'
-            elif tipo_movimiento == 'FET':
-                return 'Falta - Entrada demasiado temprana'
+            if tipo_movimiento == 'FH':
+                if minutos_tarde > 0:
+                    return f'Fuera de Horario - Retardo excesivo ({minutos_tarde} min tarde)'
+                else:
+                    return 'Fuera de Horario'
+            elif tipo_movimiento == 'NA':
+                return 'No marcó asistencia'
             else:
                 return 'Falta'
         return 'Incidencia'

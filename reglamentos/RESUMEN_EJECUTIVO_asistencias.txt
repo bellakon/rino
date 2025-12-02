@@ -1,0 +1,70 @@
+================================================================================
+RESUMEN EJECUTIVO - REGLAS DE ASISTENCIA EN REGLAMENTOS
+================================================================================
+
+Este documento contiene las secciones MÁS RELEVANTES sobre:
+- Tolerancias de entrada/salida
+- Definiciones de retardo
+- Cálculo de faltas
+- Horarios de trabajo
+- Permisos y licencias
+
+================================================================================
+
+
+================================================================================
+ARCHIVO: reglamento_condiciones_generales_trabajo_sep-2.pdf
+================================================================================
+
+
+(No se encontraron reglas específicas de asistencia)
+
+================================================================================
+ARCHIVO: REGLAMENTO_DOCENTE_TECNOLOGICOS.pdf
+================================================================================
+
+
+(No se encontraron reglas específicas de asistencia)
+
+================================================================================
+ARCHIVO: reglamento_cg_trabajo_personal_sep_0.pdf
+================================================================================
+
+
+(No se encontraron reglas específicas de asistencia)
+
+================================================================================
+ARCHIVO: REGLAMENTO_NO_DOCENTE_TECNOLOGICOS.pdf
+================================================================================
+
+
+(No se encontraron reglas específicas de asistencia)
+
+================================================================================
+ARCHIVO: REGLAMENTO_DOCENTE_TEC_OCR.pdf
+================================================================================
+
+
+(No se encontraron reglas específicas de asistencia)
+
+================================================================================
+ARCHIVO: REGLAMENTO_DOCENTE_SEP .pdf
+================================================================================
+
+
+(No se encontraron reglas específicas de asistencia)
+
+
+================================================================================
+RECOMENDACIONES PARA BITÁCORA
+================================================================================
+
+Basado en el análisis de los reglamentos, considera:
+
+1. Verificar tolerancias de entrada (buscar menciones de '10 minutos', '15 minutos')
+2. Revisar si aplica la regla '3 retardos = 1 falta'
+3. Confirmar diferencias entre personal DOCENTE y NO DOCENTE
+4. Validar rangos de retardo menor vs retardo mayor
+5. Verificar si hay reglas especiales para salidas tempranas
+6. Revisar políticas de justificación de faltas
+

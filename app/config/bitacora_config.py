@@ -20,10 +20,8 @@ CODIGOS_INCIDENCIA = {
 # TIPOS DE FALTA (COLUMNA MOVIMIENTOS)
 # ============================================
 TIPOS_FALTA = {
-    'FNA': 'Falta - No marcó asistencia',
-    'FRT': 'Falta por retardo excesivo (más de 30 min)',
-    'FST': 'Falta por salida muy tardía (más de 30 min)',
-    'FET': 'Falta - Entrada demasiado temprana'
+    'NA': 'No marcó Asistencia',
+    'FH': 'Fuera de Horario'
 }
 
 # ============================================
@@ -31,21 +29,24 @@ TIPOS_FALTA = {
 # ============================================
 
 # Ventana de entrada temprana válida (antes de hora de entrada)
-# Ejemplo: Si entrada es 8:00, puede checar desde 7:30 (30 minutos antes)
-MINUTOS_ANTES_PERMITIDOS = 30
+# Ejemplo: Si entrada es 8:00, puede checar desde 7:40 (20 minutos antes)
+# Referencia: Art. 103a Reglamento No Docentes TECNM
+MINUTOS_ANTES_PERMITIDOS = 20
 
 # Tolerancia de entrada (llegada normal sin incidencia)
 # Ejemplo: Si entrada es 8:00, hasta 8:10 es asistencia normal
 TOLERANCIA_ENTRADA_MINUTOS = 10
 
 # Retardo menor (después de tolerancia pero antes de retardo mayor)
-# Ejemplo: 8:11 a 8:16 es retardo menor
+# Ejemplo: 8:11 a 8:20 es retardo menor
+# Referencia: Art. 80a SEP, Art. 153a Docentes TECNM
 MINUTOS_RETARDO_MENOR_MIN = 11
-MINUTOS_RETARDO_MENOR_MAX = 16
+MINUTOS_RETARDO_MENOR_MAX = 20
 
 # Retardo mayor (grave pero no falta)
-# Ejemplo: 8:17 a 8:30 es retardo mayor
-MINUTOS_RETARDO_MAYOR_MIN = 17
+# Ejemplo: 8:21 a 8:30 es retardo mayor
+# Referencia: Art. 80b SEP, Art. 153b Docentes TECNM
+MINUTOS_RETARDO_MAYOR_MIN = 21
 MINUTOS_RETARDO_MAYOR_MAX = 30
 
 # Más de este tiempo después de la hora de entrada = FALTA
@@ -61,8 +62,9 @@ TOLERANCIA_SALIDA_NO_DOCENTE_MINUTOS = 5
 TOLERANCIA_SALIDA_DOCENTE_MINUTOS = 0
 
 # Máximo de minutos tarde para salida antes de ser FALTA
-# Ejemplo: Si salida es 16:00, hasta 16:30 es válido, 16:31 es falta
-MINUTOS_SALIDA_TARDE_MAX = 30
+# Ejemplo: Si salida es 16:00, hasta 16:20 es válido, 16:21 es falta
+# Referencia: Art. 103b Reglamento No Docentes TECNM
+MINUTOS_SALIDA_TARDE_MAX = 20
 
 # ============================================
 # DETECCIÓN DE CHECADAS DUPLICADAS
@@ -123,7 +125,7 @@ def calcular_codigo_retardo(minutos_tarde: int) -> tuple:
     elif MINUTOS_RETARDO_MAYOR_MIN <= minutos_tarde <= MINUTOS_RETARDO_MAYOR_MAX:
         return ('R+', None)  # Retardo mayor
     else:
-        return ('F', 'FRT')  # Falta por retardo excesivo
+        return ('F', 'FH')  # Falta - Fuera de Horario (retardo excesivo)
 
 def validar_salida(minutos_diferencia: int, es_docente_plaza: bool) -> tuple:
     """
@@ -139,7 +141,7 @@ def validar_salida(minutos_diferencia: int, es_docente_plaza: bool) -> tuple:
     # Salió tarde
     if minutos_diferencia > 0:
         if minutos_diferencia > MINUTOS_SALIDA_TARDE_MAX:
-            return ('F', 'FST', f'Salida {minutos_diferencia} minutos tarde (más de {MINUTOS_SALIDA_TARDE_MAX} min)')
+            return ('F', 'FH', f'Salida {minutos_diferencia} minutos tarde (más de {MINUTOS_SALIDA_TARDE_MAX} min)')
         else:
             return ('A', None, 'Asistencia (salida dentro de tolerancia)')
     

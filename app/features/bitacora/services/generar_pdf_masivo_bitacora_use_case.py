@@ -78,19 +78,19 @@ class GenerarPdfMasivoBitacoraUseCase:
             
             for idx, num_trabajador in enumerate(num_trabajadores):
                 # Obtener registros del trabajador
-                registros_dict, error = listar_bitacora_use_case.ejecutar(
+                # listar_bitacora_use_case.ejecutar() retorna List[BitacoraRecord], no tupla
+                registros = listar_bitacora_use_case.ejecutar(
                     num_trabajador=num_trabajador,
                     fecha_inicio=fecha_inicio,
                     fecha_fin=fecha_fin
                 )
                 
-                if error:
-                    print(f"[WARNING] Error obteniendo registros trabajador {num_trabajador}: {error}")
-                    continue
-                
-                if not registros_dict:
+                if not registros:
                     print(f"[INFO] No hay registros para trabajador {num_trabajador}")
                     continue
+                
+                # Convertir a diccionarios
+                registros_dict = [reg.to_dict() for reg in registros]
                 
                 # Filtrar días sin horario o con DESCANSO
                 registros_filtrados = [

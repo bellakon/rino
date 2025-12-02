@@ -31,6 +31,9 @@ CREATE TABLE IF NOT EXISTS bitacora (
     horas_trabajadas DECIMAL(5,2) DEFAULT 0.00 COMMENT 'Horas trabajadas en el día',
     descripcion_incidencia TEXT COMMENT 'Descripción detallada de la incidencia',
     
+    -- Control de edición
+    updatable BOOLEAN DEFAULT TRUE COMMENT 'Si es FALSE, el registro no se puede actualizar al reprocesar',
+    
     -- Auditoría
     fecha_procesamiento TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Cuándo se procesó este registro',
     procesado_por VARCHAR(100) COMMENT 'Usuario que procesó la bitácora',

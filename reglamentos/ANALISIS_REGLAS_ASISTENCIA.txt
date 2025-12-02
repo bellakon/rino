@@ -1,0 +1,217 @@
+======================================================================================
+RESUMEN DE REGLAS DE ASISTENCIA SEGÚN REGLAMENTOS OFICIALES SEP
+======================================================================================
+
+Este documento contiene las reglas OFICIALES extraídas de los reglamentos de la SEP
+para personal docente y no docente de los Institutos Tecnológicos.
+
+======================================================================================
+CAPÍTULO 1: TOLERANCIA DE ENTRADA
+======================================================================================
+
+📌 **REGLA OFICIAL** (Artículo 36):
+   "Los horarios establecerán el tiempo laborable, concediendo una TOLERANCIA DE
+    DIEZ MINUTOS PARA LLEGAR AL TRABAJO."
+
+   ✅ Tolerancia oficial: **10 MINUTOS**
+
+======================================================================================
+CAPÍTULO 2: CLASIFICACIÓN DE RETARDOS Y FALTAS
+======================================================================================
+
+📌 **REGLA OFICIAL** (Artículo 80 - Falta de puntualidad):
+
+A) **RETARDO LEVE (11-20 minutos tarde)**:
+   "Todo empleado que se presente a sus labores después de transcurridos los 10
+    minutos de tolerancia que concede este reglamento, pero SIN QUE EL RETARDO
+    EXCEDA DE 20 MINUTOS, dará origen a la aplicación de UNA NOTA MALA POR CADA
+    2 RETARDOS EN UN MES."
+   
+   Rango: 11-20 minutos tarde
+   Sanción: 1 nota mala cada 2 retardos
+   📊 En bitácora: RETARDO MENOR (R-)
+
+B) **RETARDO GRAVE (21-30 minutos tarde)**:
+   "El empleado que se presente a sus labores después de que hayan transcurrido
+    los primeros 20 minutos siguientes a los 10 de tolerancia, pero SIN EXCEDER
+    DE 30, dará lugar a UNA NOTA MALA POR CADA RETARDO."
+   
+   Rango: 21-30 minutos tarde
+   Sanción: 1 nota mala por cada retardo
+   📊 En bitácora: RETARDO MAYOR (R+)
+
+C) **FALTA (más de 30 minutos tarde)**:
+   "TRANSCURRIDOS LOS 30 MINUTOS de que habla el inciso anterior, después de la
+    hora fijada para la iniciación de las labores, NO SE PERMITIRÁ A NINGÚN
+    EMPLEADO REGISTRAR SU ASISTENCIA, por considerarse el caso como FALTA
+    INJUSTIFICADA y el trabajador no tendrá derecho a percibir el salario
+    correspondiente."
+   
+   Rango: Más de 30 minutos tarde
+   Sanción: FALTA INJUSTIFICADA + pérdida de salario del día
+   📊 En bitácora: FALTA (F) con tipo FH
+
+======================================================================================
+CAPÍTULO 3: ACUMULACIÓN DE RETARDOS
+======================================================================================
+
+📌 **REGLA OFICIAL** (Artículo 80, inciso D):
+   "El empleado que acumule 5 NOTAS MALAS por los retardos en que incurra..."
+   
+   ⚠️ Esto significa que el sistema debe llevar un conteo de notas malas acumuladas.
+
+📌 **REGLA DE COMPENSACIÓN** (Artículo 73):
+   "La acumulación de TRES EXTRAÑAMIENTOS se computará por UNA NOTA MALA."
+
+======================================================================================
+CAPÍTULO 4: DISCULPA DE RETARDOS
+======================================================================================
+
+📌 **REGLA OFICIAL** (Artículo 37):
+   "Se faculta a los jefes de las dependencias para DISCULPAR DOS RETRASOS EN UNA
+    QUINCENA a un mismo empleado, quedando, no obstante, obligados a dar el aviso
+    correspondiente al Departamento de Personal."
+   
+   ✅ Pueden disculparse: 2 retardos por quincena
+
+======================================================================================
+CAPÍTULO 5: CONTROL DE ASISTENCIA
+======================================================================================
+
+📌 **REGLA OFICIAL** (Artículo 35):
+   "El reglamento interior de cada dependencia fijará el procedimiento que juzgue
+    conveniente, para el CONTROL DE ASISTENCIA Y TRABAJO de su personal."
+
+   ✅ Cada institución puede definir su propio sistema de checadas.
+
+======================================================================================
+CAPÍTULO 6: ABANDONO DE EMPLEO
+======================================================================================
+
+📌 **REGLA OFICIAL** (Artículo 60):
+   "El abandono de empleo se considerará consumado, AL CUARTO DÍA después de que
+    el trabajador haya FALTADO TRES DÍAS CONSECUTIVOS sin aviso, ni causa
+    justificada."
+   
+   También se considera abandono:
+   "Si en las mismas condiciones faltare UN DÍA después de haber dejado de
+    concurrir a sus labores sin aviso ni justificación en OCHO OCASIONES, en los
+    30 días anteriores."
+
+   ✅ 3 faltas consecutivas sin aviso = abandono de empleo
+   ✅ 8 faltas en 30 días + 1 más = abandono de empleo
+
+======================================================================================
+CAPÍTULO 7: LICENCIAS Y PERMISOS
+======================================================================================
+
+📌 **LICENCIAS CON GOCE DE SUELDO** (Artículo 52):
+   
+   I) Por enfermedades NO profesionales:
+      - Menos de 6 meses de servicio: No aplica
+      - 6 meses a 1 año: 15 días sueldo completo + 15 días medio sueldo
+      - 1 a 5 años: 30 días completo + 30 días medio sueldo
+      - 5 a 10 años: 45 días completo + 45 días medio sueldo
+      - Más de 10 años: 60 días completo + 60 días medio sueldo
+
+   III) Por cualquier motivo:
+        "Hasta por TRES DÍAS en tres ocasiones distintas, separadas cuando menos
+         por un mes, dentro de cada año."
+        
+        ✅ 3 días × 3 veces al año = 9 días de permiso personal
+
+📌 **LICENCIAS SIN GOCE DE SUELDO** (Artículo 51):
+   
+   II) Para asuntos particulares (una vez al año):
+      - 1 año de servicio: hasta 30 días
+      - 1 a 5 años: hasta 90 días
+      - Más de 5 años: hasta 180 días
+
+======================================================================================
+CAPÍTULO 8: VACACIONES
+======================================================================================
+
+📌 **PERSONAL DOCENTE** (Artículo 45):
+   "Las vacaciones de los trabajadores docentes se regirán por los respectivos
+    calendarios escolares."
+
+📌 **PERSONAL NO DOCENTE** (Artículo 45):
+   "Las de los trabajadores no docentes que prestan servicios en las escuelas,
+    por las disposiciones que dicten las dependencias de su adscripción."
+
+======================================================================================
+COMPARACIÓN CON SISTEMA ACTUAL DE BITÁCORA
+======================================================================================
+
++------------------+----------------------+------------------------+
+| CONCEPTO         | REGLAMENTO OFICIAL   | SISTEMA ACTUAL        |
++------------------+----------------------+------------------------+
+| Tolerancia       | 10 minutos           | 10 minutos ✅         |
+| Retardo Menor    | 11-20 minutos        | 11-16 minutos ⚠️      |
+| Retardo Mayor    | 21-30 minutos        | 17-30 minutos ✅      |
+| Falta por retardo| Más de 30 minutos    | Más de 30 minutos ✅  |
++------------------+----------------------+------------------------+
+
+⚠️ **DIFERENCIA ENCONTRADA**:
+   - Reglamento: Retardo menor de 11-20 minutos
+   - Sistema actual: Retardo menor de 11-16 minutos
+   
+   📝 RECOMENDACIÓN: Ajustar el rango de retardo menor a 11-20 minutos
+
+======================================================================================
+CÓDIGOS ACTUALES EN EL SISTEMA
+======================================================================================
+
+Código | Significado          | Rango según reglamento
+-------|----------------------|-------------------------
+  A    | Asistencia           | 0-10 minutos tarde
+  R-   | Retardo Menor        | 11-20 minutos tarde (ajustar desde 11-16)
+  R+   | Retardo Mayor        | 21-30 minutos tarde (ajustar desde 17-30)
+  F    | Falta                | Más de 30 minutos tarde
+  O    | Omisión              | Marcó entrada pero no salida (o viceversa)
+  ST   | Salida Temprana      | Salió antes de su hora
+  J    | Justificado          | Tiene movimiento aprobado
+  L    | Licencia             | Tiene licencia aprobada
+
+Tipos de Falta (columna "Movimientos"):
+  NA   | No marcó Asistencia  | Sin checadas
+  FH   | Fuera de Horario     | Retardo excesivo, entrada temprana, salida tardía
+
+======================================================================================
+ACCIONES RECOMENDADAS PARA EL SISTEMA
+======================================================================================
+
+1. ✅ **Mantener** tolerancia de 10 minutos (coincide con reglamento)
+
+2. ⚠️ **AJUSTAR** rangos de retardo:
+   - Retardo Menor (R-): cambiar de 11-16 min a 11-20 min
+   - Retardo Mayor (R+): cambiar de 17-30 min a 21-30 min
+
+3. ✅ **Mantener** falta por retardo excesivo (>30 min)
+
+4. 📊 **Considerar agregar**:
+   - Contador de notas malas por retardos
+   - Sistema de compensación (3 extrañamientos = 1 nota mala)
+   - Límite de 2 retardos disculpables por quincena
+
+5. ⚠️ **Validar** que no se permita checar entrada después de 30 minutos
+   (actualmente el sistema sí registra la entrada, pero la marca como falta)
+
+======================================================================================
+REFERENCIAS
+======================================================================================
+
+Documentos analizados:
+- reglamento_condiciones_generales_trabajo_sep-2.pdf
+- reglamento_cg_trabajo_personal_sep_0.pdf
+- REGLAMENTO_DOCENTE_TECNOLOGICOS.pdf
+- REGLAMENTO_NO_DOCENTE_TECNOLOGICOS.pdf
+
+Artículos clave:
+- Artículo 36: Tolerancia de 10 minutos
+- Artículo 37: Disculpa de 2 retardos por quincena
+- Artículo 80: Clasificación de retardos (A, B, C)
+
+======================================================================================
+FECHA DE EXTRACCIÓN: 2 de diciembre de 2025
+======================================================================================

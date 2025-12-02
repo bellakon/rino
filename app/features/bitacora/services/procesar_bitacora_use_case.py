@@ -55,7 +55,7 @@ class ProcesarBitacoraUseCase:
             
             # 3. Procesar día por día
             registros = []
-            stats = {'insertados': 0, 'actualizados': 0, 'errores': 0, 'saltados_descanso': 0}
+            stats = {'insertados': 0, 'actualizados': 0, 'bloqueados': 0, 'errores': 0, 'saltados_descanso': 0}
             fecha_actual = fecha_inicio
             
             print(f"[INFO] Iniciando procesamiento de bitácora del trabajador {num_trabajador}")
@@ -148,18 +148,21 @@ class ProcesarBitacoraUseCase:
                     continue
                 
                 # Guardar en BD
-                success, error, fue_actualizado = self._guardar_registro(registro)
+                success, error, accion = self._guardar_registro(registro)
                 if error:
                     print(f"[ERROR] Error guardando registro {fecha_actual}: {error}")
                     stats['errores'] += 1
                 else:
-                    accion = "actualizado" if fue_actualizado else "insertado"
-                    print(f"[OK] {fecha_actual} ({dia_nombre}) {accion}: {registro.codigo_incidencia} - {registro.descripcion_incidencia[:50]}")
-                    if fue_actualizado:
-                        stats['actualizados'] += 1
+                    if accion == 'bloqueado':
+                        print(f"[BLOQUEADO] {fecha_actual} ({dia_nombre}) - Registro protegido (updatable=FALSE)")
+                        stats['bloqueados'] += 1
                     else:
-                        stats['insertados'] += 1
-                    registros.append(registro)
+                        print(f"[OK] {fecha_actual} ({dia_nombre}) {accion}: {registro.codigo_incidencia} - {registro.descripcion_incidencia[:50]}")
+                        if accion == 'actualizado':
+                            stats['actualizados'] += 1
+                        else:
+                            stats['insertados'] += 1
+                        registros.append(registro)
                 
                 fecha_actual += timedelta(days=1)
             
@@ -171,9 +174,10 @@ class ProcesarBitacoraUseCase:
             print(f"  Días procesados: {dias_procesados}")
             print(f"  - Insertados: {stats['insertados']}")
             print(f"  - Actualizados: {stats['actualizados']}")
+            print(f"  - Bloqueados (protegidos): {stats['bloqueados']}")
             print(f"  Días saltados (descanso): {stats['saltados_descanso']}")
             print(f"  Errores: {stats['errores']}")
-            print(f"  Días sin procesar: {total_dias - dias_procesados - stats['saltados_descanso']}\n")
+            print(f"  Días sin procesar: {total_dias - dias_procesados - stats['saltados_descanso'] - stats['bloqueados']}\n")
             
             return (registros, stats), None
             
@@ -213,11 +217,12 @@ class ProcesarBitacoraUseCase:
         """
         Guarda o actualiza un registro en la BD
         Returns:
-            tuple: (success, error, fue_actualizado)
+            tuple: (success, error, accion)
+            accion puede ser: 'insertado', 'actualizado', 'bloqueado'
         """
-        # Verificar si ya existe
+        # Verificar si ya existe y si es actualizable
         query_existe = """
-            SELECT id FROM bitacora 
+            SELECT id, updatable FROM bitacora 
             WHERE num_trabajador = %s AND fecha = %s
         """
         
@@ -227,11 +232,13 @@ class ProcesarBitacoraUseCase:
         )
         
         if error:
-            return False, error, False
-        
-        fue_actualizado = bool(resultados)
+            return False, error, None
         
         if resultados:
+            # Si el registro tiene updatable = FALSE, no actualizar
+            if not resultados[0].get('updatable', True):
+                return True, None, 'bloqueado'  # Registro protegido, no se modifica
+            
             # UPDATE
             query = """
                 UPDATE bitacora SET
@@ -263,6 +270,7 @@ class ProcesarBitacoraUseCase:
                 registro.descripcion_incidencia, registro.procesado_por,
                 registro.num_trabajador, registro.fecha
             )
+            accion = 'actualizado'
         else:
             # INSERT
             query = """
@@ -285,13 +293,14 @@ class ProcesarBitacoraUseCase:
                 registro.minutos_retardo, registro.horas_trabajadas, registro.descripcion_incidencia,
                 registro.procesado_por
             )
+            accion = 'insertado'
         
         resultado, error = self.query_executor.ejecutar(query, params)
         
         if error:
-            return False, error, fue_actualizado
+            return False, error, None
         
-        return True, None, fue_actualizado
+        return True, None, accion
 
 
 # Instancia singleton

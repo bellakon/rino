@@ -175,6 +175,7 @@
                     <div id="resultados" class="d-none">
                         <h5 class="mb-3">Resultados del Procesamiento</h5>
                         <div id="mensajeResultado" class="alert"></div>
+                        <p class="text-muted small"><i class="bi bi-info-circle"></i> Doble click en una fila para editar el registro</p>
                         <div class="table-responsive">
                             <table class="table table-striped table-hover" id="tablaResultados">
                                 <thead class="table-dark">
@@ -260,6 +261,102 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de Edición de Registro -->
+<div class="modal fade" id="modalEditarRegistro" tabindex="-1" aria-labelledby="modalEditarRegistroLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="modalEditarRegistroLabel">
+                    <i class="bi bi-pencil-square"></i> Editar Registro de Bitácora
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarRegistro">
+                    <input type="hidden" id="editRegistroId">
+                    
+                    <!-- Info del registro (solo lectura) -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Trabajador</label>
+                            <p class="form-control-plaintext" id="editNombreTrabajador"></p>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted">Fecha</label>
+                            <p class="form-control-plaintext" id="editFecha"></p>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-muted">Horario</label>
+                            <p class="form-control-plaintext" id="editHorario"></p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Incidencia actual (solo lectura) -->
+                    <div class="alert alert-secondary mb-3">
+                        <strong>Incidencia Actual:</strong> 
+                        <span id="editCodigoActual" class="badge bg-secondary"></span>
+                        <span id="editTipoMovActual"></span>
+                        <br>
+                        <small id="editDescripcionActual"></small>
+                    </div>
+                    
+                    <!-- Checadas editables -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label for="editChecada1" class="form-label">Checada 1 (Entrada)</label>
+                            <input type="time" class="form-control" id="editChecada1" step="1">
+                            <small class="text-muted">HH:MM</small>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="editChecada2" class="form-label">Checada 2 (Salida)</label>
+                            <input type="time" class="form-control" id="editChecada2" step="1">
+                            <small class="text-muted">HH:MM</small>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="editChecada3" class="form-label">Checada 3</label>
+                            <input type="time" class="form-control" id="editChecada3" step="1">
+                            <small class="text-muted">Opcional</small>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="editChecada4" class="form-label">Checada 4</label>
+                            <input type="time" class="form-control" id="editChecada4" step="1">
+                            <small class="text-muted">Opcional</small>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Protección del registro -->
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="editUpdatable" checked>
+                            <label class="form-check-label" for="editUpdatable">
+                                <strong>Permitir actualizaciones automáticas</strong>
+                            </label>
+                        </div>
+                        <small class="text-muted">
+                            Si está desactivado, este registro NO será modificado cuando se reprocese la bitácora.
+                            Útil para correcciones manuales que deben preservarse.
+                        </small>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Al guardar, la incidencia se recalculará automáticamente según las checadas ingresadas y las reglas del sistema.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarEdicionRegistro()">
+                    <i class="bi bi-save"></i> Guardar y Recalcular
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -271,6 +368,13 @@ let trabajadoresSeleccionados = [];
 let registrosProcesados = [];
 let datosGeneralesPDF = {};
 let horariosValidados = false; // Nueva variable para rastrear validación en modo masivo
+
+// Función para obtener día de semana en español
+function obtenerDiaSemana(fechaStr) {
+    const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const fecha = new Date(fechaStr + 'T00:00:00');
+    return dias[fecha.getDay()];
+}
 
 // Cargar trabajadores al inicio
 document.addEventListener('DOMContentLoaded', function() {
@@ -666,6 +770,9 @@ function mostrarResultados(registros, mensaje, stats) {
         if (stats.actualizados > 0) {
             mensajeHtml += '<i class="bi bi-arrow-repeat text-info"></i> ' + stats.actualizados + ' actualizados | ';
         }
+        if (stats.bloqueados > 0) {
+            mensajeHtml += '<i class="bi bi-lock-fill text-warning"></i> ' + stats.bloqueados + ' protegidos | ';
+        }
         if (stats.errores > 0) {
             mensajeHtml += '<i class="bi bi-exclamation-triangle text-warning"></i> ' + stats.errores + ' errores | ';
         }
@@ -679,6 +786,13 @@ function mostrarResultados(registros, mensaje, stats) {
     
     registros.forEach(reg => {
         const tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+        tr.setAttribute('data-registro-id', reg.id);
+        
+        // Agregar evento de doble click para editar
+        tr.addEventListener('dblclick', function() {
+            abrirModalEdicion(reg.id);
+        });
         
         // Columna Movimientos: mostrar tipo_movimiento según el código
         let movimientoTexto = '-';
@@ -691,7 +805,7 @@ function mostrarResultados(registros, mensaje, stats) {
         }
         
         tr.innerHTML = `
-            <td>${reg.fecha}</td>
+            <td><strong>${obtenerDiaSemana(reg.fecha)}</strong> ${reg.fecha}</td>
             <td><small>${reg.departamento || '-'}</small></td>
             <td><small>${reg.horario_texto || 'Sin horario'}</small></td>
             <td>${obtenerBadgeCodigo(reg.codigo_incidencia)}</td>
@@ -1115,6 +1229,183 @@ function mostrarModalResultadosMasivos(resultados, totales, fechaInicio, fechaFi
     modal.show();
 }
 
+// ===== FUNCIONES PARA EDICIÓN DE REGISTROS =====
+
+async function abrirModalEdicion(registroId) {
+    console.log('[BITACORA] Abriendo modal de edición para registro:', registroId);
+    
+    try {
+        const response = await fetch(`/bitacora/registro/${registroId}`);
+        const data = await response.json();
+        
+        if (!data.success) {
+            mostrarToast(data.message || 'Error al obtener registro', 'error');
+            return;
+        }
+        
+        const reg = data.registro;
+        
+        // Llenar campos del modal
+        document.getElementById('editRegistroId').value = reg.id;
+        document.getElementById('editNombreTrabajador').textContent = `${reg.num_trabajador} - ${reg.nombre_trabajador}`;
+        document.getElementById('editFecha').textContent = reg.fecha;
+        document.getElementById('editHorario').textContent = reg.horario_texto || 'Sin horario';
+        
+        // Incidencia actual
+        document.getElementById('editCodigoActual').textContent = reg.codigo_incidencia;
+        document.getElementById('editCodigoActual').className = 'badge ' + obtenerClaseBadge(reg.codigo_incidencia);
+        document.getElementById('editTipoMovActual').textContent = reg.tipo_movimiento ? ` (${reg.tipo_movimiento})` : '';
+        document.getElementById('editDescripcionActual').textContent = reg.descripcion_incidencia || '';
+        
+        // Checadas (convertir HH:MM:SS a HH:MM para input type="time")
+        document.getElementById('editChecada1').value = formatTimeForInput(reg.checada1);
+        document.getElementById('editChecada2').value = formatTimeForInput(reg.checada2);
+        document.getElementById('editChecada3').value = formatTimeForInput(reg.checada3);
+        document.getElementById('editChecada4').value = formatTimeForInput(reg.checada4);
+        
+        // Updatable (1 = true, 0 = false)
+        document.getElementById('editUpdatable').checked = reg.updatable == 1 || reg.updatable === true;
+        
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalEditarRegistro'));
+        modal.show();
+        
+    } catch (error) {
+        console.error('[BITACORA] Error abriendo modal de edición:', error);
+        mostrarToast('Error al cargar el registro', 'error');
+    }
+}
+
+function formatTimeForInput(timeStr) {
+    if (!timeStr) return '';
+    // Si viene como HH:MM:SS, extraer solo HH:MM
+    const parts = timeStr.split(':');
+    if (parts.length >= 2) {
+        return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+    }
+    return '';
+}
+
+function obtenerClaseBadge(codigo) {
+    const clases = {
+        'A': 'bg-success',
+        'F': 'bg-danger',
+        'R+': 'bg-warning text-dark',
+        'R-': 'bg-warning text-dark',
+        'O': 'bg-secondary',
+        'ST': 'bg-info text-dark',
+        'J': 'bg-primary',
+        'L': 'bg-primary'
+    };
+    return clases[codigo] || 'bg-secondary';
+}
+
+async function guardarEdicionRegistro() {
+    const registroId = document.getElementById('editRegistroId').value;
+    const checada1 = document.getElementById('editChecada1').value || null;
+    const checada2 = document.getElementById('editChecada2').value || null;
+    const checada3 = document.getElementById('editChecada3').value || null;
+    const checada4 = document.getElementById('editChecada4').value || null;
+    const updatable = document.getElementById('editUpdatable').checked;
+    
+    console.log('[BITACORA] Guardando edición de registro:', registroId);
+    console.log('[BITACORA] Datos:', { checada1, checada2, checada3, checada4, updatable });
+    
+    try {
+        const response = await fetch(`/bitacora/registro/${registroId}/editar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                checada1: checada1,
+                checada2: checada2,
+                checada3: checada3,
+                checada4: checada4,
+                updatable: updatable
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Cerrar modal primero
+            const modalElement = document.getElementById('modalEditarRegistro');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+                modal.hide();
+            }
+            
+            // Limpiar backdrops por si acaso
+            setTimeout(() => {
+                limpiarBackdrops();
+            }, 300);
+            
+            mostrarToast('Registro actualizado correctamente', 'success');
+            
+            // Actualizar la fila en la tabla
+            actualizarFilaEnTabla(data.registro);
+            
+            // Actualizar registros procesados para PDF
+            actualizarRegistroProcesado(data.registro);
+            
+        } else {
+            mostrarToast(data.message || 'Error al actualizar registro', 'error');
+        }
+        
+    } catch (error) {
+        console.error('[BITACORA] Error guardando edición:', error);
+        mostrarToast('Error al guardar cambios', 'error');
+    }
+}
+
+function actualizarFilaEnTabla(registro) {
+    const fila = document.querySelector(`tr[data-registro-id="${registro.id}"]`);
+    if (!fila) return;
+    
+    // Columna Movimientos
+    let movimientoTexto = '-';
+    if (registro.codigo_incidencia === 'F' && registro.tipo_movimiento) {
+        movimientoTexto = `<span class="badge bg-danger">${registro.tipo_movimiento}</span>`;
+    } else if (registro.tipo_movimiento && (registro.codigo_incidencia === 'J' || registro.codigo_incidencia === 'L' || registro.codigo_incidencia === 'A')) {
+        movimientoTexto = registro.tipo_movimiento;
+    }
+    
+    fila.innerHTML = `
+        <td><strong>${obtenerDiaSemana(registro.fecha)}</strong> ${registro.fecha}</td>
+        <td><small>${registro.departamento || '-'}</small></td>
+        <td><small>${registro.horario_texto || 'Sin horario'}</small></td>
+        <td>${obtenerBadgeCodigo(registro.codigo_incidencia)}</td>
+        <td><small>${movimientoTexto}</small></td>
+        <td>${registro.checada1 || '-'}</td>
+        <td>${registro.checada2 || '-'}</td>
+        <td>${registro.checada3 || '-'}</td>
+        <td>${registro.checada4 || '-'}</td>
+        <td>${registro.minutos_retardo || 0}</td>
+        <td>${registro.horas_trabajadas ? registro.horas_trabajadas.toFixed(2) : '0.00'}</td>
+        <td><small>${registro.descripcion_incidencia || ''}</small></td>
+    `;
+    
+    // Reasignar el evento de doble click
+    fila.addEventListener('dblclick', function() {
+        abrirModalEdicion(registro.id);
+    });
+    
+    // Resaltar la fila brevemente
+    fila.style.backgroundColor = '#d4edda';
+    setTimeout(() => {
+        fila.style.backgroundColor = '';
+    }, 2000);
+}
+
+function actualizarRegistroProcesado(registroActualizado) {
+    // Actualizar el array global de registros procesados para PDF
+    if (registrosProcesados && Array.isArray(registrosProcesados)) {
+        const index = registrosProcesados.findIndex(r => r.id === registroActualizado.id);
+        if (index !== -1) {
+            registrosProcesados[index] = registroActualizado;
+        }
+    }
+}
+
 async function descargarPdfIndividualDesdeMasivo(numTrabajador, nombreTrabajador) {
     console.log('[BITACORA] Descargando PDF individual para trabajador:', numTrabajador);
     
@@ -1226,15 +1517,78 @@ async function enviarPorCorreo(numTrabajador, nombreTrabajador) {
 }
 
 function mostrarToast(mensaje, tipo) {
-    // Implementación simple de notificación
-    const alertClass = {
-        'success': 'alert-success',
-        'error': 'alert-danger',
-        'warning': 'alert-warning',
-        'info': 'alert-info'
-    }[tipo] || 'alert-info';
+    // Limpiar backdrops huérfanos primero
+    limpiarBackdrops();
     
-    alert(mensaje); // Simplificado, puedes usar toast library si prefieres
+    // Crear toast container si no existe
+    let toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toastContainer';
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        toastContainer.style.zIndex = '9999';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Mapear tipo a clase de Bootstrap
+    const bgClass = {
+        'success': 'bg-success text-white',
+        'error': 'bg-danger text-white',
+        'warning': 'bg-warning text-dark',
+        'info': 'bg-info text-dark'
+    }[tipo] || 'bg-info text-dark';
+    
+    // Crear toast
+    const toastId = 'toast_' + Date.now();
+    const toastHtml = `
+        <div id="${toastId}" class="toast ${bgClass}" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${mensaje}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, { delay: 4000 });
+    toast.show();
+    
+    // Eliminar el elemento después de que se oculte
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        toastElement.remove();
+    });
 }
+
+// Función para limpiar backdrops huérfanos de modales
+function limpiarBackdrops() {
+    // Eliminar backdrops huérfanos
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+        backdrop.remove();
+    });
+    
+    // Restaurar scroll del body
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+}
+
+// Agregar listeners para limpiar al cerrar modales
+document.addEventListener('DOMContentLoaded', function() {
+    // Limpiar backdrops cuando se oculten los modales
+    const modales = ['modalEditarRegistro', 'modalResultadosMasivos'];
+    
+    modales.forEach(modalId => {
+        const modalElement = document.getElementById(modalId);
+        if (modalElement) {
+            modalElement.addEventListener('hidden.bs.modal', function() {
+                limpiarBackdrops();
+            });
+        }
+    });
+});
 </script>
 {% endblock %}

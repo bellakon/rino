@@ -8,7 +8,7 @@ User=ccomputo
 Group=ccomputo
 WorkingDirectory=/home/ccomputo/projects/rino
 Environment="PATH=/home/ccomputo/projects/rino/.venv/bin"
-ExecStart=/home/ccomputo/projects/rino/.venv/bin/gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 120 --access-logfile /var/log/tecnotime/access.log --error-logfile /var/log/tecnotime/error.log main:app
+ExecStart=/home/ccomputo/projects/rino/.venv/bin/gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 120 --preload --access-logfile /var/log/tecnotime/access.log --error-logfile /var/log/tecnotime/error.log main:app
 
 # Reiniciar automáticamente si falla
 Restart=always

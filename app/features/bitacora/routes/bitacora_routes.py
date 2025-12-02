@@ -7,6 +7,7 @@ from app.features.bitacora.services.obtener_horario_asignado_use_case import Obt
 from app.features.bitacora.services.generar_pdf_bitacora_use_case import generar_pdf_bitacora_use_case
 from app.features.bitacora.services.generar_pdf_masivo_bitacora_use_case import generar_pdf_masivo_bitacora_use_case
 from app.features.bitacora.services.enviar_correo_bitacora_use_case import enviar_correo_bitacora_use_case
+from app.features.bitacora.services.editar_registro_bitacora_use_case import editar_registro_bitacora_use_case
 
 # Configurar logger
 logger = logging.getLogger(__name__)
@@ -130,13 +131,16 @@ def procesar_bitacora():
         # Desempaquetar resultado (registros, stats)
         registros, stats = resultado
         
-        # Convertir BitacoraRecord a dict si es necesario
-        registros_dict = []
-        for reg in (registros or []):
-            if hasattr(reg, 'to_dict'):
-                registros_dict.append(reg.to_dict())
-            else:
-                registros_dict.append(reg if isinstance(reg, dict) else {})
+        # Después de procesar, leer registros de la BD para obtener IDs correctos
+        from app.features.bitacora.services.listar_bitacora_use_case import listar_bitacora_use_case
+        registros_bd = listar_bitacora_use_case.ejecutar(
+            num_trabajador=num_trabajador,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin
+        )
+        
+        # Convertir BitacoraRecord a dict (ahora con IDs)
+        registros_dict = [reg.to_dict() for reg in registros_bd] if registros_bd else []
         
         # Construir mensaje informativo
         mensaje_partes = []
@@ -508,3 +512,81 @@ def enviar_correo():
         }), 500
 
 
+@bitacora_bp.route('/registro/<int:registro_id>', methods=['GET'])
+def obtener_registro(registro_id):
+    """Obtiene un registro de bitácora por ID para edición"""
+    try:
+        logger.info(f"[BITACORA] GET /bitacora/registro/{registro_id}")
+        
+        registro, error = editar_registro_bitacora_use_case.obtener_registro(registro_id)
+        
+        if error:
+            logger.error(f"[BITACORA] Error obteniendo registro: {error}")
+            return jsonify({
+                'success': False,
+                'message': error
+            }), 404
+        
+        return jsonify({
+            'success': True,
+            'registro': registro
+        })
+        
+    except Exception as e:
+        logger.error(f"[BITACORA] Error en obtener_registro(): {str(e)}")
+        logger.error(f"[BITACORA] Traceback: {__import__('traceback').format_exc()}")
+        return jsonify({
+            'success': False,
+            'message': f'Error al obtener registro: {str(e)}'
+        }), 500
+
+
+@bitacora_bp.route('/registro/<int:registro_id>/editar', methods=['POST'])
+def editar_registro(registro_id):
+    """Edita un registro de bitácora manualmente y recalcula incidencias"""
+    try:
+        logger.info(f"[BITACORA] POST /bitacora/registro/{registro_id}/editar")
+        data = request.get_json()
+        
+        checada1 = data.get('checada1')
+        checada2 = data.get('checada2')
+        checada3 = data.get('checada3')
+        checada4 = data.get('checada4')
+        updatable = data.get('updatable', True)
+        
+        logger.debug(f"[BITACORA] Editando registro {registro_id}")
+        logger.debug(f"[BITACORA] Checadas: {checada1}, {checada2}, {checada3}, {checada4}")
+        logger.debug(f"[BITACORA] Updatable: {updatable}")
+        
+        registro_actualizado, error = editar_registro_bitacora_use_case.ejecutar(
+            registro_id=registro_id,
+            checada1=checada1,
+            checada2=checada2,
+            checada3=checada3,
+            checada4=checada4,
+            updatable=updatable,
+            editado_por='MANUAL'
+        )
+        
+        if error:
+            logger.error(f"[BITACORA] Error editando registro: {error}")
+            return jsonify({
+                'success': False,
+                'message': error
+            }), 400
+        
+        logger.info(f"[BITACORA] Registro {registro_id} editado exitosamente")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Registro actualizado exitosamente',
+            'registro': registro_actualizado
+        })
+        
+    except Exception as e:
+        logger.error(f"[BITACORA] Error en editar_registro(): {str(e)}")
+        logger.error(f"[BITACORA] Traceback: {__import__('traceback').format_exc()}")
+        return jsonify({
+            'success': False,
+            'message': f'Error al editar registro: {str(e)}'
+        }), 500
