@@ -8,13 +8,55 @@ from app.features.asistencias.services.importar_checadas_use_case import importa
 import math
 import json
 import uuid
+import os
+import tempfile
+import pickle
 
 # Crear blueprint
 asistencias_bp = Blueprint('asistencias', __name__, url_prefix='/asistencias')
 
-# Cache temporal para guardar checadas entre requests (mejor que sesión)
-# Key: session_id, Value: checadas_pendientes
-_checadas_cache = {}
+# Directorio para archivos temporales de importación
+IMPORT_TEMP_DIR = '/tmp/tecnotime_imports'
+os.makedirs(IMPORT_TEMP_DIR, exist_ok=True)
+
+
+def _get_cache_path(session_id: str) -> str:
+    """Obtiene la ruta del archivo de cache para una sesión"""
+    return os.path.join(IMPORT_TEMP_DIR, f'{session_id}.pkl')
+
+
+def _save_to_cache(session_id: str, data: list) -> bool:
+    """Guarda datos en archivo temporal"""
+    try:
+        cache_path = _get_cache_path(session_id)
+        with open(cache_path, 'wb') as f:
+            pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
+        return True
+    except Exception as e:
+        print(f"Error guardando cache: {e}")
+        return False
+
+
+def _load_from_cache(session_id: str) -> list:
+    """Carga datos desde archivo temporal"""
+    try:
+        cache_path = _get_cache_path(session_id)
+        if os.path.exists(cache_path):
+            with open(cache_path, 'rb') as f:
+                return pickle.load(f)
+    except Exception as e:
+        print(f"Error cargando cache: {e}")
+    return None
+
+
+def _delete_cache(session_id: str):
+    """Elimina archivo temporal de cache"""
+    try:
+        cache_path = _get_cache_path(session_id)
+        if os.path.exists(cache_path):
+            os.remove(cache_path)
+    except Exception as e:
+        print(f"Error eliminando cache: {e}")
 
 
 @asistencias_bp.route('/')
@@ -140,17 +182,20 @@ def importar_checadas():
         """Genera eventos SSE con progreso de análisis"""
         try:
             for progreso in caso_uso.ejecutar(archivo_contenido):
-                # Si llegamos a la fase de preview, guardar en cache
+                # Si llegamos a la fase de preview, guardar en archivo temporal
                 if progreso.get('requiere_confirmacion'):
-                    # Guardar checadas en cache temporal
-                    _checadas_cache[import_session_id] = caso_uso.checadas_pendientes
-                    # Enviar session_id al frontend
-                    progreso['import_session_id'] = import_session_id
+                    # Guardar checadas en archivo temporal (no en memoria)
+                    if _save_to_cache(import_session_id, caso_uso.checadas_pendientes):
+                        # Enviar session_id al frontend
+                        progreso['import_session_id'] = import_session_id
+                    else:
+                        yield f"data: {json.dumps({'error': 'Error al guardar datos temporales', 'finalizado': True})}\n\n"
+                        return
                 
                 yield f"data: {json.dumps(progreso)}\n\n"
         except GeneratorExit:
             # El cliente cerró la conexión, limpiar cache si existe
-            _checadas_cache.pop(import_session_id, None)
+            _delete_cache(import_session_id)
         except Exception as e:
             # Error no capturado en el caso de uso
             import traceback
@@ -172,7 +217,7 @@ def importar_checadas():
 def importar_confirmar():
     """
     Confirma e inserta checadas después del preview
-    Obtiene las checadas desde el cache (no desde el frontend)
+    Obtiene las checadas desde archivo temporal (compartido entre workers)
     """
     
     # Obtener import_session_id del body
@@ -182,11 +227,11 @@ def importar_confirmar():
     
     import_session_id = data['import_session_id']
     
-    # Obtener checadas desde cache
-    if import_session_id not in _checadas_cache:
-        return jsonify({'error': 'No hay checadas pendientes. Por favor analice el archivo nuevamente.'}), 400
+    # Obtener checadas desde archivo temporal
+    checadas_nuevas = _load_from_cache(import_session_id)
     
-    checadas_nuevas = _checadas_cache[import_session_id]
+    if checadas_nuevas is None:
+        return jsonify({'error': 'No hay checadas pendientes. Por favor analice el archivo nuevamente.'}), 400
     
     if not isinstance(checadas_nuevas, list) or len(checadas_nuevas) == 0:
         return jsonify({'error': 'Lista de checadas inválida o vacía'}), 400
@@ -199,10 +244,12 @@ def importar_confirmar():
                 yield f"data: {json.dumps(progreso)}\n\n"
             
             # Limpiar cache después de insertar
-            _checadas_cache.pop(import_session_id, None)
+            _delete_cache(import_session_id)
             
         except Exception as e:
-            yield f"data: {json.dumps({'error': str(e), 'finalizado': True})}\n\n"
+            import traceback
+            error_msg = f"{type(e).__name__}: {str(e)}"
+            yield f"data: {json.dumps({'error': error_msg, 'finalizado': True})}\n\n"
     
     # Retornar respuesta SSE
     return Response(

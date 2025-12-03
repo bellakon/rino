@@ -709,12 +709,18 @@ function actualizarProgresoImportacion(data) {
         document.getElementById('btnCerrar').disabled = false;
         
         if (!data.error) {
-            document.getElementById('exitoImportacion').innerHTML = `
-                <strong><i class="bi bi-check-circle"></i> Importación completada exitosamente</strong><br>
-                <small>
-                    Insertadas: ${(data.insertadas || 0).toLocaleString()}
-                </small>
-            `;
+            let mensajeExito = `<strong><i class="bi bi-check-circle"></i> Importación completada</strong><br>`;
+            mensajeExito += `<small>Insertadas: <strong>${(data.insertadas || 0).toLocaleString()}</strong> registros nuevos</small>`;
+            
+            if (data.duplicadas_bd && data.duplicadas_bd > 0) {
+                mensajeExito += `<br><small class="text-warning">Ya existían en BD: ${data.duplicadas_bd.toLocaleString()} (ignorados)</small>`;
+            }
+            
+            if (data.total_procesado) {
+                mensajeExito += `<br><small class="text-muted">Total procesado: ${data.total_procesado.toLocaleString()}</small>`;
+            }
+            
+            document.getElementById('exitoImportacion').innerHTML = mensajeExito;
             document.getElementById('exitoImportacion').style.display = 'block';
         }
     }

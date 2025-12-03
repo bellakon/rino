@@ -325,6 +325,7 @@ class ImportarChecadasUseCase:
     def ejecutar_insercion(self, checadas_nuevas: List[Dict]) -> Generator[Dict, None, None]:
         """
         Ejecuta la inserción de checadas después de confirmación del usuario
+        Optimizado para millones de registros usando INSERT múltiple
         
         Args:
             checadas_nuevas: Lista de checadas validadas y sin duplicados
@@ -362,64 +363,87 @@ class ImportarChecadasUseCase:
             'fase': 'nombres'
         }
         
-        # Insertar en lotes (batches) para archivos grandes
-        BATCH_SIZE = 1000
-        insertadas = 0
+        # Insertar en lotes grandes usando INSERT múltiple para mejor rendimiento
+        # Con millones de registros, usar batches de 2000 para balancear memoria y velocidad
+        BATCH_SIZE = 2000
+        insertadas_total = 0
+        duplicadas_total = 0
         errores_insercion = []
+        total_batches = (total_nuevas + BATCH_SIZE - 1) // BATCH_SIZE
         
-        query = """
-            INSERT INTO asistencias 
-            (num_trabajador, nombre, fecha, hora, checador, created_at)
-            VALUES (%s, %s, %s, %s, %s, NOW())
-        """
-        
-        for i in range(0, total_nuevas, BATCH_SIZE):
+        for batch_num, i in enumerate(range(0, total_nuevas, BATCH_SIZE), 1):
             batch = checadas_nuevas[i:i + BATCH_SIZE]
+            batch_size = len(batch)
             
-            # Preparar parámetros para batch con nombres
-            params_list = [
-                (
-                    c['num_trabajador'], 
-                    nombres_trabajadores.get(c['num_trabajador']),  # Nombre o None
-                    c['fecha'], 
-                    c['hora'], 
-                    c['checador']
-                )
-                for c in batch
-            ]
-            
-            # Ejecutar batch insert
-            batch_insertadas, error = query_executor.ejecutar_batch(
-                query,
-                params_list,
-                ignore_duplicates=True  # Por si acaso hay duplicados concurrentes
-            )
-            
-            if error:
+            try:
+                # Construir INSERT múltiple con VALUES (más rápido que batch individual)
+                placeholders = []
+                params = []
+                
+                for c in batch:
+                    nombre = nombres_trabajadores.get(c['num_trabajador'])
+                    placeholders.append("(%s, %s, %s, %s, %s, NOW())")
+                    params.extend([
+                        c['num_trabajador'],
+                        nombre,
+                        c['fecha'],
+                        c['hora'],
+                        c['checador']
+                    ])
+                
+                query = f"""
+                    INSERT IGNORE INTO asistencias 
+                    (num_trabajador, nombre, fecha, hora, checador, created_at)
+                    VALUES {', '.join(placeholders)}
+                """
+                
+                # Ejecutar INSERT múltiple
+                resultado, error = query_executor.ejecutar(query, tuple(params))
+                
+                if error:
+                    errores_insercion.append({
+                        'batch': batch_num,
+                        'error': str(error)
+                    })
+                else:
+                    # affected_rows contiene cuántos se insertaron realmente (no duplicados)
+                    batch_insertadas = resultado.get('affected_rows', 0) if resultado else 0
+                    batch_duplicadas = batch_size - batch_insertadas
+                    insertadas_total += batch_insertadas
+                    duplicadas_total += batch_duplicadas
+                
+            except Exception as e:
                 errores_insercion.append({
-                    'batch': i // BATCH_SIZE + 1,
-                    'error': error
+                    'batch': batch_num,
+                    'error': str(e)
                 })
-                # Continuar con siguientes batches
-                continue
-            
-            insertadas += batch_insertadas
             
             # Calcular progreso (15% a 95%)
-            progreso = 15 + int((i + len(batch)) / total_nuevas * 80)
+            progreso = 15 + int((batch_num / total_batches) * 80)
             
-            yield {
-                'estado': f'Insertando... {insertadas:,}/{total_nuevas:,}',
-                'progreso': progreso,
-                'insertadas': insertadas,
-                'fase': 'insercion'
-            }
+            # Reportar progreso cada 10 lotes o cada lote si hay pocos
+            if batch_num % 10 == 0 or batch_num == total_batches or total_batches <= 20:
+                yield {
+                    'estado': f'Lote {batch_num:,}/{total_batches:,} - Insertadas: {insertadas_total:,}, Duplicadas BD: {duplicadas_total:,}',
+                    'progreso': progreso,
+                    'insertadas': insertadas_total,
+                    'duplicadas_bd': duplicadas_total,
+                    'batch_actual': batch_num,
+                    'total_batches': total_batches,
+                    'fase': 'insercion'
+                }
         
         # Resultado final
+        estado_final = f'Completado: {insertadas_total:,} insertadas, {duplicadas_total:,} ya existían en BD'
+        if errores_insercion:
+            estado_final += f' ({len(errores_insercion)} lotes con error)'
+        
         yield {
-            'estado': 'Inserción completada exitosamente',
+            'estado': estado_final,
             'progreso': 100,
-            'insertadas': insertadas,
+            'insertadas': insertadas_total,
+            'duplicadas_bd': duplicadas_total,
+            'total_procesado': total_nuevas,
             'errores': errores_insercion if errores_insercion else None,
             'finalizado': True
         }
