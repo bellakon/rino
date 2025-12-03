@@ -105,14 +105,28 @@ def importar_checadas():
     
     # Leer contenido del archivo
     try:
-        archivo_contenido = archivo.read().decode('utf-8')
-    except UnicodeDecodeError:
-        try:
-            # Intentar con latin-1 si UTF-8 falla
-            archivo.seek(0)
-            archivo_contenido = archivo.read().decode('latin-1')
-        except Exception as e:
-            return jsonify({'error': f'Error al leer archivo: {str(e)}'}), 400
+        # Leer todo el contenido primero
+        contenido_raw = archivo.read()
+        if not contenido_raw:
+            return jsonify({'error': 'El archivo está vacío'}), 400
+        
+        # Intentar decodificar con diferentes codificaciones
+        archivo_contenido = None
+        for encoding in ['utf-8-sig', 'utf-8', 'latin-1', 'cp1252']:
+            try:
+                archivo_contenido = contenido_raw.decode(encoding)
+                break
+            except UnicodeDecodeError:
+                continue
+        
+        if archivo_contenido is None:
+            return jsonify({'error': 'No se pudo decodificar el archivo. Verifique la codificación.'}), 400
+        
+        # Liberar memoria del contenido raw
+        del contenido_raw
+        
+    except Exception as e:
+        return jsonify({'error': f'Error al leer archivo: {str(e)}'}), 400
     
     # Crear nueva instancia del caso de uso para este request
     from app.features.asistencias.services.importar_checadas_use_case import ImportarChecadasUseCase
@@ -134,9 +148,14 @@ def importar_checadas():
                     progreso['import_session_id'] = import_session_id
                 
                 yield f"data: {json.dumps(progreso)}\n\n"
+        except GeneratorExit:
+            # El cliente cerró la conexión, limpiar cache si existe
+            _checadas_cache.pop(import_session_id, None)
         except Exception as e:
             # Error no capturado en el caso de uso
-            yield f"data: {json.dumps({'error': str(e), 'finalizado': True})}\n\n"
+            import traceback
+            error_msg = f"{type(e).__name__}: {str(e)}"
+            yield f"data: {json.dumps({'error': error_msg, 'finalizado': True})}\n\n"
     
     # Retornar respuesta SSE
     return Response(

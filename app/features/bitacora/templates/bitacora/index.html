@@ -204,8 +204,11 @@
                             <i class="bi bi-arrow-left"></i> Anterior
                         </button>
                         <div>
-                            <button type="button" class="btn btn-primary" onclick="generarPDF()" id="btnGenerarPDF" style="display: none;">
-                                <i class="bi bi-file-earmark-pdf"></i> Descargar PDF Individual
+                            <button type="button" class="btn btn-primary me-2" onclick="generarPDF()" id="btnGenerarPDF" style="display: none;">
+                                <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
+                            </button>
+                            <button type="button" class="btn btn-success me-2" onclick="enviarCorreoIndividual()" id="btnEnviarCorreo" style="display: none;">
+                                <i class="bi bi-envelope"></i> Enviar por Correo
                             </button>
                             <button type="button" class="btn btn-success" onclick="generarPDFMasivo()" id="btnGenerarPDFMasivo" style="display: none;">
                                 <i class="bi bi-file-earmark-pdf-fill"></i> Descargar PDF Masivo
@@ -839,12 +842,14 @@ function mostrarResultados(registros, mensaje, stats) {
         fecha_fin: fechaFin
     };
     
-    // Mostrar botón de PDF apropiado según el modo
+    // Mostrar botones apropiados según el modo
     if (modoMasivo) {
         document.getElementById('btnGenerarPDFMasivo').style.display = 'inline-block';
         document.getElementById('btnGenerarPDF').style.display = 'none';
+        document.getElementById('btnEnviarCorreo').style.display = 'none';
     } else {
         document.getElementById('btnGenerarPDF').style.display = 'inline-block';
+        document.getElementById('btnEnviarCorreo').style.display = 'inline-block';
         document.getElementById('btnGenerarPDFMasivo').style.display = 'none';
     }
     
@@ -922,7 +927,49 @@ async function generarPDF() {
         mostrarToast('Error al generar PDF', 'error');
     } finally {
         btnGenerarPDF.disabled = false;
-        btnGenerarPDF.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> Descargar PDF Individual';
+        btnGenerarPDF.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> Descargar PDF';
+    }
+}
+
+// Función para enviar correo en modo individual
+async function enviarCorreoIndividual() {
+    console.log('[BITACORA] Enviando correo individual...');
+    
+    if (!trabajadorSeleccionado) {
+        mostrarToast('No hay trabajador seleccionado', 'warning');
+        return;
+    }
+    
+    const btnEnviarCorreo = document.getElementById('btnEnviarCorreo');
+    btnEnviarCorreo.disabled = true;
+    btnEnviarCorreo.innerHTML = '<i class="bi bi-hourglass-split"></i> Enviando...';
+    
+    try {
+        const response = await fetch('/bitacora/enviar-correo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                num_trabajador: trabajadorSeleccionado.num_trabajador,
+                nombre_trabajador: trabajadorSeleccionado.nombre,
+                fecha_inicio: datosGeneralesPDF.fecha_inicio,
+                fecha_fin: datosGeneralesPDF.fecha_fin
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarToast(data.message || 'Correo enviado exitosamente', 'success');
+        } else {
+            mostrarToast(data.message || 'Error al enviar correo', 'error');
+        }
+        
+    } catch (error) {
+        console.error('[BITACORA] Error enviando correo:', error);
+        mostrarToast('Error al enviar correo', 'error');
+    } finally {
+        btnEnviarCorreo.disabled = false;
+        btnEnviarCorreo.innerHTML = '<i class="bi bi-envelope"></i> Enviar por Correo';
     }
 }
 

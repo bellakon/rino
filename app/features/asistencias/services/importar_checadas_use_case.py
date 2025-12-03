@@ -153,11 +153,23 @@ class ImportarChecadasUseCase:
                     if ':' not in hora:
                         raise ValueError('Falta separador :')
                     # Aceptar HH:MM o HH:MM:SS
-                    if hora.count(':') == 1:
-                        datetime.strptime(hora, '%H:%M')
-                    elif hora.count(':') == 2:
-                        datetime.strptime(hora, '%H:%M:%S')
-                        hora = hora[:5]  # Normalizar a HH:MM
+                    partes_hora = hora.split(':')
+                    if len(partes_hora) == 2:
+                        # Formato HH:MM
+                        h, m = partes_hora
+                        if not (h.isdigit() and m.isdigit()):
+                            raise ValueError('Hora/minuto no numérico')
+                        if not (0 <= int(h) <= 23 and 0 <= int(m) <= 59):
+                            raise ValueError('Hora fuera de rango')
+                        hora = f"{int(h):02d}:{int(m):02d}"
+                    elif len(partes_hora) == 3:
+                        # Formato HH:MM:SS
+                        h, m, s = partes_hora
+                        if not (h.isdigit() and m.isdigit() and s.isdigit()):
+                            raise ValueError('Hora/minuto/segundo no numérico')
+                        if not (0 <= int(h) <= 23 and 0 <= int(m) <= 59 and 0 <= int(s) <= 59):
+                            raise ValueError('Hora fuera de rango')
+                        hora = f"{int(h):02d}:{int(m):02d}"  # Normalizar a HH:MM
                     else:
                         raise ValueError('Formato incorrecto')
                 except ValueError as e:
@@ -276,8 +288,10 @@ class ImportarChecadasUseCase:
         # PREVIEW: Mostrar resumen y esperar confirmación
         # IMPORTANTE: NO enviar todas las checadas al frontend (puede ser demasiado grande)
         # Solo enviar preview y guardar checadas en sesión del servidor
-        preview_registros = checadas_nuevas[:50]  # Primeras 50 para preview
-        preview_invalidas = lineas_invalidas[:50]  # Primeras 50 inválidas
+        # Enviar hasta 500 registros para preview (suficiente para ver variedad)
+        max_preview = min(500, len(checadas_nuevas))
+        preview_registros = checadas_nuevas[:max_preview]
+        preview_invalidas = lineas_invalidas[:100]  # Primeras 100 inválidas
         
         # Guardar checadas en self para usarlas después de confirmación
         self.checadas_pendientes = checadas_nuevas

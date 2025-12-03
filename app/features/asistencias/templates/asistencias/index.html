@@ -783,36 +783,53 @@ function mostrarPreviewConfirmacion(data) {
 }
 
 function renderizarPaginaNuevos() {
-    if (!datosPreview || !datosPreview.checadas_nuevas) return;
+    if (!datosPreview || !datosPreview.preview || !datosPreview.preview.registros_nuevos) {
+        console.log('No hay registros para mostrar', datosPreview);
+        return;
+    }
     
-    const registros = datosPreview.checadas_nuevas;
+    const registros = datosPreview.preview.registros_nuevos;
+    const totalRegistros = datosPreview.preview.total_nuevos || registros.length;
     const inicio = (paginaNuevos - 1) * registrosPorPagina;
     const fin = inicio + registrosPorPagina;
     const paginaActual = registros.slice(inicio, fin);
-    const totalPaginas = Math.ceil(registros.length / registrosPorPagina);
+    const totalPaginas = Math.ceil(registros.length / registrosPorPagina) || 1;
     
     // Llenar tabla
     const tbody = document.getElementById('tablaPreviewNuevos');
     tbody.innerHTML = '';
     
-    paginaActual.forEach((reg, idx) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${inicio + idx + 1}</td>
-            <td>${reg.num_trabajador}</td>
-            <td>${reg.fecha}</td>
-            <td>${reg.hora}</td>
-            <td><small>${reg.checador}</small></td>
-        `;
-        tbody.appendChild(tr);
-    });
+    if (paginaActual.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No hay registros en esta página</td></tr>';
+    } else {
+        paginaActual.forEach((reg, idx) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${inicio + idx + 1}</td>
+                <td>${reg.num_trabajador}</td>
+                <td>${reg.fecha}</td>
+                <td>${reg.hora}</td>
+                <td><small>${reg.checador}</small></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
     
     // Actualizar controles de paginación
     document.getElementById('textoPaginaNuevos').textContent = `Página ${paginaNuevos} de ${totalPaginas}`;
     document.getElementById('btnPrevNuevos').disabled = paginaNuevos === 1;
-    document.getElementById('btnNextNuevos').disabled = paginaNuevos === totalPaginas;
-    document.getElementById('infoPaginacionNuevos').textContent = 
-        `Mostrando ${inicio + 1} - ${Math.min(fin, registros.length)} de ${registros.length.toLocaleString()}`;
+    document.getElementById('btnNextNuevos').disabled = paginaNuevos >= totalPaginas;
+    
+    // Mostrar info de paginación más clara
+    const mostrandoHasta = Math.min(fin, registros.length);
+    if (registros.length < totalRegistros) {
+        // Solo tenemos un preview de los registros totales
+        document.getElementById('infoPaginacionNuevos').innerHTML = 
+            `Mostrando ${inicio + 1} - ${mostrandoHasta} de <strong>${registros.length}</strong> (preview de ${totalRegistros.toLocaleString()} total)`;
+    } else {
+        document.getElementById('infoPaginacionNuevos').textContent = 
+            `Mostrando ${inicio + 1} - ${mostrandoHasta} de ${registros.length.toLocaleString()}`;
+    }
 }
 
 function cambiarPaginaNuevos(direccion) {
