@@ -481,12 +481,17 @@ def enviar_correo():
                 'message': 'Faltan datos requeridos (num_trabajador, nombre_trabajador, fecha_inicio, fecha_fin)'
             }), 400
         
+        # Obtener parámetro para usar plantilla HTML enriquecida
+        # None = usar configuración guardada en email_settings.json
+        usar_html = request.json.get('usar_plantilla_html', None)
+        
         # Ejecutar caso de uso
         exito, error = enviar_correo_bitacora_use_case.ejecutar(
             num_trabajador=num_trabajador,
             nombre_trabajador=nombre_trabajador,
             fecha_inicio=fecha_inicio,
-            fecha_fin=fecha_fin
+            fecha_fin=fecha_fin,
+            usar_plantilla_html=usar_html
         )
         
         if not exito:

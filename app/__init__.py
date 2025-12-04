@@ -43,6 +43,7 @@ def create_app():
             os.path.join(base_dir, 'features/horarios/templates'),
             os.path.join(base_dir, 'features/movimientos/templates'),
             os.path.join(base_dir, 'features/bitacora/templates'),
+            os.path.join(base_dir, 'features/configuracion/templates'),
         ])
     ])
     app.jinja_loader = loader
@@ -60,6 +61,7 @@ def create_app():
     from app.features.horarios.routes.horarios_routes import horarios_bp
     from app.features.movimientos.routes.movimientos_routes import movimientos_bp
     from app.features.bitacora.routes.bitacora_routes import bitacora_bp
+    from app.features.configuracion.routes.configuracion_routes import configuracion_bp
     
     app.register_blueprint(checadores_bp)
     app.register_blueprint(asistencias_bp)
@@ -69,6 +71,7 @@ def create_app():
     app.register_blueprint(horarios_bp)
     app.register_blueprint(movimientos_bp)
     app.register_blueprint(bitacora_bp)
+    app.register_blueprint(configuracion_bp)
     
     # Proteger TODAS las rutas excepto auth
     @app.before_request

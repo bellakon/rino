@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+
+{% block title %}Configuración de Correos{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('configuracion.index') }}">Configuración</a></li>
+                    <li class="breadcrumb-item active">Correos Electrónicos</li>
+                </ol>
+            </nav>
+            <h2><i class="fas fa-envelope me-2"></i>Configuración de Correos Electrónicos</h2>
+            <p class="text-muted">
+                Personaliza las plantillas de correo que se envían a los trabajadores con sus reportes de asistencia.
+            </p>
+            <hr>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Panel izquierdo: Configuración -->
+        <div class="col-lg-5">
+            <!-- Sección: Imágenes del Correo -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-images me-2"></i>Imágenes del Correo</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">
+                        Sube las imágenes que aparecerán en el encabezado de los correos HTML.
+                        Las imágenes se incrustan directamente en el correo.
+                    </p>
+                    
+                    <!-- Subir imagen -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Subir nueva imagen</label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="inputImagen" accept="image/png,image/jpeg,image/gif">
+                            <button class="btn btn-primary" type="button" onclick="subirImagen()">
+                                <i class="fas fa-upload me-1"></i>Subir
+                            </button>
+                        </div>
+                        <small class="text-muted">Formatos permitidos: PNG, JPG, GIF</small>
+                    </div>
+                    
+                    <!-- Lista de imágenes -->
+                    <label class="form-label fw-bold">Imágenes disponibles</label>
+                    <div id="listaImagenes" class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                        {% if imagenes %}
+                            {% for img in imagenes %}
+                            <div class="d-flex align-items-center justify-content-between p-2 border-bottom imagen-item">
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ url_for('configuracion.ver_imagen', nombre=img.nombre) }}" 
+                                         class="me-2 rounded" style="width: 40px; height: 40px; object-fit: cover;">
+                                    <span class="small">{{ img.nombre }}</span>
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger" onclick="eliminarImagen('{{ img.nombre }}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted small mb-0">No hay imágenes. Sube logo_tecnm.png y banner_rh.png</p>
+                        {% endif %}
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Configuración de imágenes -->
+                    <div class="row">
+                        <div class="col-6">
+                            <label class="form-label fw-bold small">Logo Principal</label>
+                            <select class="form-select form-select-sm" id="selectLogoEncabezado">
+                                <option value="">Sin imagen</option>
+                                {% for img in imagenes %}
+                                <option value="{{ img.nombre }}" {% if config.imagen_encabezado == img.nombre %}selected{% endif %}>
+                                    {{ img.nombre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold small">Banner Secundario</label>
+                            <select class="form-select form-select-sm" id="selectBannerSecundario">
+                                <option value="">Sin imagen</option>
+                                {% for img in imagenes %}
+                                <option value="{{ img.nombre }}" {% if config.imagen_secundaria == img.nombre %}selected{% endif %}>
+                                    {{ img.nombre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sección: Remitente -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-tie me-2"></i>Datos del Remitente</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombre del Remitente</label>
+                        <input type="text" class="form-control" id="inputRemitenteNombre" 
+                               value="{{ config.remitente_nombre }}" 
+                               placeholder="Ej: PREFECTURA RECURSOS HUMANOS">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Departamento</label>
+                        <input type="text" class="form-control" id="inputRemitenteDepartamento" 
+                               value="{{ config.remitente_departamento }}"
+                               placeholder="Ej: Depto. de Recursos Humanos">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="checkUsarHtml" 
+                                   {% if config.usar_plantilla_html %}checked{% endif %}>
+                            <label class="form-check-label" for="checkUsarHtml">
+                                <strong>Usar plantilla HTML enriquecida</strong>
+                                <small class="text-muted d-block">Si está activo, los correos incluirán imágenes y formato visual</small>
+                            </label>
+                        </div>
+                    </div>
+                    <hr>
+                    <button class="btn btn-primary w-100 mb-2" onclick="guardarConfiguracion()">
+                        <i class="fas fa-save me-2"></i>Guardar Configuración
+                    </button>
+                    <button class="btn btn-outline-success w-100" onclick="mostrarModalPrueba()">
+                        <i class="fas fa-paper-plane me-2"></i>Enviar Correo de Prueba
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Sección: SMTP (Solo lectura) -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-server me-2"></i>Servidor SMTP (desde .env)</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Esta configuración se carga desde el archivo <code>.env</code> y no es editable desde aquí.
+                    </p>
+                    <div class="mb-2">
+                        <strong class="small">Host:</strong> <code class="small">{{ config.smtp.host }}</code>
+                    </div>
+                    <div class="mb-2">
+                        <strong class="small">Puerto:</strong> <code class="small">{{ config.smtp.port }}</code>
+                    </div>
+                    <div class="mb-2">
+                        <strong class="small">Email remitente:</strong> <code class="small">{{ config.smtp.from_email }}</code>
+                    </div>
+                    <div class="mb-2">
+                        <strong class="small">TLS:</strong> 
+                        <span class="badge {% if config.smtp.use_tls %}bg-success{% else %}bg-secondary{% endif %}">
+                            {{ 'Activado' if config.smtp.use_tls else 'Desactivado' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Variables disponibles -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-code me-2"></i>Variables Disponibles</h5>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted">
+                        Usa estas variables en las plantillas. Se reemplazan automáticamente:
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Variable</th>
+                                    <th>Descripción</th>
+                                </tr>
+                            </thead>
+                            <tbody class="small">
+                                <tr><td><code>{nombre}</code></td><td>Nombre del trabajador</td></tr>
+                                <tr><td><code>{num_trabajador}</code></td><td>Número de empleado</td></tr>
+                                <tr><td><code>{departamento}</code></td><td>Departamento</td></tr>
+                                <tr><td><code>{descripcion_quincena}</code></td><td>Ej: "Primera quincena de Diciembre"</td></tr>
+                                <tr><td><code>{periodo_inicio}</code></td><td>Fecha inicio</td></tr>
+                                <tr><td><code>{periodo_fin}</code></td><td>Fecha fin</td></tr>
+                                <tr><td><code>{fecha_limite_justificaciones}</code></td><td>Fecha límite</td></tr>
+                                <tr><td><code>{remitente_nombre}</code></td><td>Nombre del remitente</td></tr>
+                                <tr><td><code>{remitente_departamento}</code></td><td>Depto. del remitente</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Panel derecho: Vista previa -->
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-eye me-2"></i>Vista Previa del Correo HTML</h5>
+                    <button class="btn btn-sm btn-light" onclick="actualizarPreview()">
+                        <i class="fas fa-sync-alt me-1"></i>Actualizar
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <iframe id="iframePreview" 
+                            src="{{ url_for('configuracion.preview_email') }}" 
+                            style="width: 100%; height: 700px; border: none;">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para enviar correo de prueba -->
+<div class="modal fade" id="modalPrueba" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-paper-plane me-2"></i>Enviar Correo de Prueba</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">
+                    Se enviará un correo con la plantilla actual y datos de ejemplo para verificar 
+                    que todo funciona correctamente.
+                </p>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Correo electrónico de destino</label>
+                    <input type="email" class="form-control" id="inputEmailPrueba" 
+                           placeholder="ejemplo@correo.com" required>
+                    <small class="text-muted">Ingresa tu correo para recibir la prueba</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="enviarCorreoPrueba()">
+                    <i class="fas fa-paper-plane me-1"></i>Enviar Prueba
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function subirImagen() {
+    const input = document.getElementById('inputImagen');
+    if (!input.files.length) {
+        alert('Selecciona una imagen primero');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('imagen', input.files[0]);
+    
+    fetch('{{ url_for("configuracion.subir_imagen") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.mensaje);
+            // Forzar recarga completa sin caché
+            window.location.href = window.location.href.split('?')[0] + '?t=' + Date.now();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error al subir imagen: ' + error);
+    });
+}
+
+function eliminarImagen(nombre) {
+    if (!confirm(`¿Eliminar la imagen "${nombre}"?`)) return;
+    
+    fetch('{{ url_for("configuracion.eliminar_imagen") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({nombre: nombre})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.mensaje);
+            // Forzar recarga completa sin caché
+            window.location.href = window.location.href.split('?')[0] + '?t=' + Date.now();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error al eliminar: ' + error);
+    });
+}
+
+function actualizarPreview() {
+    document.getElementById('iframePreview').src = '{{ url_for("configuracion.preview_email") }}?' + Date.now();
+}
+
+function guardarConfiguracion() {
+    const config = {
+        imagen_encabezado: document.getElementById('selectLogoEncabezado').value,
+        imagen_secundaria: document.getElementById('selectBannerSecundario').value,
+        remitente_nombre: document.getElementById('inputRemitenteNombre').value,
+        remitente_departamento: document.getElementById('inputRemitenteDepartamento').value,
+        usar_plantilla_html: document.getElementById('checkUsarHtml').checked
+    };
+    
+    fetch('{{ url_for("configuracion.guardar_config_email") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(config)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✓ ' + data.mensaje);
+            actualizarPreview();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error al guardar: ' + error);
+    });
+}
+
+function mostrarModalPrueba() {
+    const modal = new bootstrap.Modal(document.getElementById('modalPrueba'));
+    modal.show();
+}
+
+function enviarCorreoPrueba() {
+    const email = document.getElementById('inputEmailPrueba').value;
+    if (!email) {
+        alert('Ingresa un correo electrónico');
+        return;
+    }
+    
+    const btn = event.target;
+    const textoOriginal = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Enviando...';
+    
+    fetch('{{ url_for("configuracion.probar_correo") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: email})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✓ ' + data.mensaje);
+            bootstrap.Modal.getInstance(document.getElementById('modalPrueba')).hide();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = textoOriginal;
+    });
+}
+
+// Actualizar preview cada vez que cambien las imágenes seleccionadas
+document.getElementById('selectLogoEncabezado')?.addEventListener('change', function() {
+    // Guardar automáticamente al cambiar
+    guardarConfiguracion();
+});
+document.getElementById('selectBannerSecundario')?.addEventListener('change', function() {
+    guardarConfiguracion();
+});
+
+// Cargar lista de imágenes dinámicamente al iniciar
+function cargarListaImagenes() {
+    fetch('{{ url_for("configuracion.listar_imagenes") }}')
+        .then(response => response.json())
+        .then(data => {
+            const lista = document.getElementById('listaImagenes');
+            const selectLogo = document.getElementById('selectLogoEncabezado');
+            const selectBanner = document.getElementById('selectBannerSecundario');
+            
+            if (data.imagenes && data.imagenes.length > 0) {
+                // Actualizar lista visual
+                lista.innerHTML = data.imagenes.map(img => `
+                    <div class="d-flex align-items-center justify-content-between p-2 border-bottom imagen-item">
+                        <div class="d-flex align-items-center">
+                            <img src="${img.url}?t=${Date.now()}" class="me-2 rounded" style="width: 40px; height: 40px; object-fit: cover;">
+                            <span class="small">${img.nombre}</span>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarImagen('${img.nombre}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `).join('');
+                
+                // Actualizar selects
+                const opciones = '<option value="">Sin imagen</option>' + 
+                    data.imagenes.map(img => `<option value="${img.nombre}">${img.nombre}</option>`).join('');
+                
+                const logoActual = selectLogo.value;
+                const bannerActual = selectBanner.value;
+                
+                selectLogo.innerHTML = opciones;
+                selectBanner.innerHTML = opciones;
+                
+                // Restaurar selección si existe
+                if (logoActual) selectLogo.value = logoActual;
+                if (bannerActual) selectBanner.value = bannerActual;
+            } else {
+                lista.innerHTML = '<p class="text-muted small mb-0">No hay imágenes. Sube logo_tecnm.png y banner_rh.png</p>';
+            }
+        })
+        .catch(error => console.error('Error cargando imágenes:', error));
+}
+
+// Cargar al iniciar
+document.addEventListener('DOMContentLoaded', cargarListaImagenes);
+</script>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Configuración{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <h2><i class="fas fa-cogs me-2"></i>Configuración del Sistema</h2>
+            <hr>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Tarjeta: Configuración de Correos -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-envelope fa-4x text-primary mb-3"></i>
+                    <h5 class="card-title">Correos Electrónicos</h5>
+                    <p class="card-text">
+                        Configura las plantillas de correo, sube imágenes para el encabezado 
+                        y personaliza los mensajes que se envían a los trabajadores.
+                    </p>
+                    <a href="{{ url_for('configuracion.email_config') }}" class="btn btn-primary">
+                        <i class="fas fa-arrow-right me-2"></i>Configurar
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tarjeta: Checadores (link a existente) -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-fingerprint fa-4x text-success mb-3"></i>
+                    <h5 class="card-title">Checadores Biométricos</h5>
+                    <p class="card-text">
+                        Administra los dispositivos ZKTeco de control de asistencia, 
+                        configura IPs y verifica conexiones.
+                    </p>
+                    <a href="{{ url_for('checadores.index') }}" class="btn btn-success">
+                        <i class="fas fa-arrow-right me-2"></i>Administrar
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tarjeta: Departamentos -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-building fa-4x text-info mb-3"></i>
+                    <h5 class="card-title">Departamentos</h5>
+                    <p class="card-text">
+                        Gestiona los departamentos de la institución y asigna 
+                        trabajadores a cada área.
+                    </p>
+                    <a href="{{ url_for('departamentos.index') }}" class="btn btn-info">
+                        <i class="fas fa-arrow-right me-2"></i>Administrar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
