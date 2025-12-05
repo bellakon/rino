@@ -7,21 +7,22 @@ CREATE TABLE IF NOT EXISTS trabajadores (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     num_trabajador INT UNSIGNED NOT NULL UNIQUE,
     nombre VARCHAR(255) NOT NULL,
-    departamento_id INT,
-    tipoPlaza VARCHAR(100),
-    ingresoSEPfecha DATE,
-    captura DATE,
+    email VARCHAR(100) DEFAULT NULL COMMENT 'Correo electrónico del trabajador',
+    departamento_id INT DEFAULT 0,
+    tipoPlaza VARCHAR(100) DEFAULT NULL,
+    ingresoSEPfecha DATE DEFAULT NULL,
+    captura DATE DEFAULT NULL,
     activo BOOLEAN DEFAULT 1,
-    movimiento VARCHAR(100),
+    movimiento VARCHAR(100) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     -- Índices para consultas eficientes
     INDEX idx_num_trabajador (num_trabajador),
     INDEX idx_nombre (nombre),
-    INDEX idx_departamento_id (departamento_id),
     INDEX idx_tipoPlaza (tipoPlaza),
     INDEX idx_activo (activo),
+    INDEX fk_trabajador_departamento (departamento_id),
     
     -- Foreign Key a tabla departamentos
     CONSTRAINT fk_trabajador_departamento 
